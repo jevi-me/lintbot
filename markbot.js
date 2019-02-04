@@ -1,73 +1,92 @@
+/* ----------------------------------------------------------------------
+Based on Markbot by Thomas J Bradley <hey@thomasjbradley.ca>
+  (homepage: https://github.com/thomasjbradley/markbot)
+------------------------------------------------------------------------- */
+
 'use strict';
 
-const electron = require('electron');
-const nativeImage = require('electron').nativeImage;
-const app = electron.app;
-const Menu = electron.Menu;
+
+/*--- Constants ---*/
+const electron      = require('electron');
+const nativeImage   = require('electron').nativeImage;
+const app           = electron.app;
+const Menu          = electron.Menu;
 const BrowserWindow = electron.BrowserWindow;
-const shell = electron.shell;
-const exec = require('child_process').exec;
-const fs = require('fs');
-const path = require('path');
-const util = require('util');
-const https = require('https');
-const crypto = require('crypto');
-const request = require('request');
-const mkdirp = require('mkdirp');
-const fixPath = require('fix-path');
+const shell         = electron.shell;
 
-const markbotMain = require('./app/markbot-main');
-const markbotFileGenerator = require('./app/markbot-file-generator');
-const dependencyChecker = require('./app/dependency-checker');
-const serverManager = require('./app/server-manager');
+
+/*--- Node Require ---*/
+const exec      = require('child_process').exec;
+const fs        = require('fs');
+const path      = require('path');
+const util      = require('util');
+const https     = require('https');
+const crypto    = require('crypto');
+const request   = require('request');
+const mkdirp    = require('mkdirp');
+const fixPath   = require('fix-path');
+
+/*--- File Require ---*/
+const lintbotMain             = require('./app/lintbot-main');
+const lintbotFileGenerator    = require('./app/lintbot-file-generator');
+const dependencyChecker       = require('./app/dependency-checker');
+const serverManager           = require('./app/server-manager');
 const screenshotNamingService = require('./app/checks/screenshots/naming-service');
-const passcode = require('./app/passcode');
-const locker = require('./app/locker');
-const requirementsFinder = require('./app/requirements-finder');
-const lockMatcher = require('./app/lock-matcher');
-const exists = require('./app/file-exists');
-const escapeShell = require(`./app/escape-shell`);
-const checkManager = require('./app/check-manager');
+const passcode                = require('./app/passcode');
+const locker                  = require('./app/locker');
+const requirementsFinder      = require('./app/requirements-finder');
+const lockMatcher             = require('./app/lock-matcher');
+const exists                  = require('./app/file-exists');
+const escapeShell             = require(`./app/escape-shell`);
+const checkManager            = require('./app/check-manager');
 
+
+/*-- Variables --*/
 global.ENV = process.env.NODE_ENV;
 global.DEBUG = (global.ENV === 'development');
 
-const MARKBOT_DEVELOP_MENU = !!process.env.MARKBOT_DEVELOP_MENU || false;
-const MARKBOT_LOCK_PASSCODE = process.env.MARKBOT_LOCK_PASSCODE || false;
+const LINTBOT_DEVELOP_MENU = !!process.env.LINTBOT_DEVELOP_MENU || false;
+const LINTBOT_LOCK_PASSCODE = process.env.LINTBOT_LOCK_PASSCODE || false;
 const appMenu = require('./app/menu');
-const MARKBOT_FILE = '.markbot.yml';
-const MARKBOT_LOCK_FILE = '.markbot.lock';
+const LINTBOT_FILE = '.lintbot.yml';
+const LINTBOT_LOCK_FILE = '.lintbot.lock';
 
+
+/*--- Files Variables ---*/
 let appPkg = require('./package.json');
 let config = require('./config.json');
+
+
 let dependencies = {};
-let markbotFile = {};
-let markbotFileOriginal = {};
-let markbotIgnoreFile = {};
+let lintbotFile = {};
+let lintbotFileOriginal = {};
+let lintbotIgnoreFile = {};
 let mainWindow;
 let debugWindow;
 let differWindow;
+let reportsWindow;
 let menuCallbacks = {};
 let menuOptions = {
-  openProgressinator: false,
+  openCoursewebsite: false,
   openRepo: false,
   runChecks: false,
   revealFolder: false,
   viewLocal: false,
   viewLive: false,
   browseRepo: false,
-  submitAssignment: false,
-  signOut: false,
-  signOutUsername: false,
+  //submitAssignment: false,
+  //signOut: false,
+  //signOutUsername: false,
   showDevelop: false,
   developMenuItems: false,
   debugChecked: global.DEBUG,
+  openReports: false,
 };
-let markbotFilePath;
-let markbotLockFilePath;
+let lintbotFilePath;
+let lintbotLockFilePath;
 let currentFolderPath;
 let startupCurrentFolderPath;
-let markbotLockFileLocker;
+let lintbotLockFileLocker;
 let actualFilesLocker;
 let isCheater = {
   cheated: false,
@@ -79,8 +98,10 @@ app.commandLine.appendSwitch('disable-http-cache');
 app.commandLine.appendSwitch('force-color-profile', 'srgb');
 app.commandLine.appendSwitch('disable-features', 'ColorCorrectRendering');
 
+
+/*--- Window Functions ---*/
 const updateAppMenu = function () {
-  menuOptions.showDevelop = (MARKBOT_DEVELOP_MENU && MARKBOT_LOCK_PASSCODE && passcode.matches(MARKBOT_LOCK_PASSCODE, config.secret, config.passcodeHash));
+  menuOptions.showDevelop = (LINTBOT_DEVELOP_MENU && LINTBOT_LOCK_PASSCODE && passcode.matches(LINTBOT_LOCK_PASSCODE, config.secret, config.passcodeHash));
   Menu.setApplicationMenu(Menu.buildFromTemplate(appMenu.getMenuTemplate(app, menuCallbacks, menuOptions)));
 };
 
@@ -100,6 +121,8 @@ const createMainWindow = function (next) {
   mainWindow.on('closed', function () {
     if (differWindow) differWindow.destroy();
     if (debugWindow) debugWindow.destroy();
+    if (reportsWindow) reportsWindow.destroy();
+
 
     checkManager.stop();
     exports.disableFolderMenuFeatures();
@@ -107,6 +130,10 @@ const createMainWindow = function (next) {
     mainWindow.destroy();
     mainWindow = null;
 
+    BrowserWindow.getAllWindows().forEach(window => {
+      window.destroy();
+      window = null;
+    });
     if (process.platform !== 'darwin') app.quit();
   });
 
@@ -124,7 +151,7 @@ const createMainWindow = function (next) {
     mainWindow.webContents.send('app:blur');
   });
 
-  global.markbotMainWindow = mainWindow.id;
+  global.lintbotMainWindow = mainWindow.id;
   if (global.DEBUG) console.log(`Main window: ${mainWindow.id}`);
 };
 
@@ -140,10 +167,10 @@ const createDebugWindow = function () {
   debugWindow.on('close', function (e) {
     e.preventDefault();
     debugWindow.hide();
-  })
+  });
 
   debugWindow.loadURL('file://' + __dirname + '/frontend/debug/debug.html');
-  global.markbotDebugWindow = debugWindow.id;
+  global.lintbotDebugWindow = debugWindow.id;
 };
 
 const createWindows = function (next) {
@@ -158,7 +185,7 @@ const createWindows = function (next) {
         createDebugWindow();
 
         if (startupCurrentFolderPath) {
-          markbotMain.send('app:file-dropped', startupCurrentFolderPath);
+          lintbotMain.send('app:file-dropped', startupCurrentFolderPath);
           startupCurrentFolderPath = false;
         } else {
           if (next) next();
@@ -169,73 +196,75 @@ const createWindows = function (next) {
 };
 
 const initializeInterface = function () {
-  let repoOrFolder = (markbotFile.repo) ? markbotFile.repo : currentFolderPath.split(/[\\\/]/).pop();
+  let repoOrFolder = (lintbotFile.repo) ? lintbotFile.repo : currentFolderPath.split(/[\\\/]/).pop();
 
   mainWindow.setRepresentedFilename(currentFolderPath);
-  mainWindow.setTitle(repoOrFolder + ' — Markbot');
+  mainWindow.setTitle(repoOrFolder + ' — Lintbot');
 
   menuOptions.runChecks = true;
   menuOptions.revealFolder = true;
   menuOptions.viewLocal = true;
   menuOptions.developMenuItems = true;
 
-  if (markbotFile.canvasCourse) markbotMain.send('app:with-canvas');
+  if (lintbotFile.canvasCourse) lintbotMain.send('app:with-canvas');
 
-  if (markbotFile.repo) {
+  if (lintbotFile.repo) {
     menuOptions.viewLive = `https://{{username}}.github.io/${repoOrFolder}/`;
     menuOptions.ghRepo = `https://github.com/{{username}}/${repoOrFolder}`;
     menuOptions.ghIssues = `https://github.com/{{username}}/${repoOrFolder}/issues/new`;
     menuOptions.browseRepo = true;
-    markbotMain.send('app:with-github');
+    lintbotMain.send('app:with-github');
   } else {
     menuOptions.viewLive = false;
     menuOptions.ghRepo = false;
     menuOptions.ghIssues = false;
     menuOptions.browseRepo = false;
-    markbotMain.send('app:without-github');
+    lintbotMain.send('app:without-github');
   }
 };
 
 const checkForCheating = function () {
-  markbotLockFileLocker = locker.new(config.passcodeHash);
+  lintbotLockFileLocker = locker.new(config.passcodeHash);
   actualFilesLocker = locker.new(config.passcodeHash);
 
-  markbotLockFileLocker.read(markbotLockFilePath);
-  requirementsFinder.lock(actualFilesLocker, currentFolderPath, markbotFile, markbotFileOriginal, markbotIgnoreFile);
-  isCheater = lockMatcher.match(markbotLockFileLocker.getLocks(), actualFilesLocker.getLocks(), markbotIgnoreFile);
+  lintbotLockFileLocker.read(lintbotLockFilePath);
+  requirementsFinder.lock(actualFilesLocker, currentFolderPath, lintbotFile, lintbotFileOriginal, lintbotIgnoreFile);
+  isCheater = lockMatcher.match(lintbotLockFileLocker.getLocks(), actualFilesLocker.getLocks(), lintbotIgnoreFile);
 
-  if (isCheater.cheated) {
-    markbotMain.debug('CHEATER!');
+  /*if (isCheater.cheated) {
+    lintbotMain.debug('CHEATER!');
 
     for (let match in isCheater.matches) {
       if (!isCheater.matches[match].equal) {
         if (isCheater.matches[match].actualHash && isCheater.matches[match].expectedHash) {
-          markbotMain.debug(`&nbsp;&nbsp;┖ \`${match}\` is different — expecting: \`${isCheater.matches[match].expectedHash.slice(0, 7)}…\` actual: \`${isCheater.matches[match].actualHash.slice(0, 7)}…\``);
+          lintbotMain.debug(`&nbsp;&nbsp;┖ \`${match}\` is different — expecting: \`${isCheater.matches[match].expectedHash.slice(0, 7)}…\` actual: \`${isCheater.matches[match].actualHash.slice(0, 7)}…\``);
         } else {
-          markbotMain.debug(`&nbsp;&nbsp;┖ \`${match}\` is different`);
+          lintbotMain.debug(`&nbsp;&nbsp;┖ \`${match}\` is different`);
         }
+
       }
     }
-  }
+  }*/
 };
 
 const hasFilesToCheck = function () {
-  const noGit = (typeof markbotFile.git === 'undefined');
-  const noHtmlFiles = (typeof markbotFile.html === 'undefined' || markbotFile.html.length < 1);
-  const noCssFiles = (typeof markbotFile.css === 'undefined' || markbotFile.css.length < 1);
-  const noJsFiles = (typeof markbotFile.js === 'undefined' || markbotFile.js.length < 1);
-  const noMdFiles = (typeof markbotFile.md === 'undefined' || markbotFile.md.length < 1);
-  const noYmlFiles = (typeof markbotFile.yml === 'undefined' || markbotFile.yml.length < 1);
-  const noFiles = (typeof markbotFile.files === 'undefined' || markbotFile.files.length < 1);
-  const noFunctionality = (typeof markbotFile.functionality === 'undefined' || markbotFile.functionality.length < 1);
-  const noScreeshots = (typeof markbotFile.screenshots === 'undefined' || markbotFile.screenshots.length < 1);
-  const noPerformance = (typeof markbotFile.performance === 'undefined' || markbotFile.performance.length < 1);
+  const noGit = (typeof lintbotFile.git === 'undefined');
+  const noHtmlFiles = (typeof lintbotFile.html === 'undefined' || lintbotFile.html.length < 1);
+  const noCssFiles = (typeof lintbotFile.css === 'undefined' || lintbotFile.css.length < 1);
+  const noJsFiles = (typeof lintbotFile.js === 'undefined' || lintbotFile.js.length < 1);
+  const noMdFiles = (typeof lintbotFile.md === 'undefined' || lintbotFile.md.length < 1);
+  const noYmlFiles = (typeof lintbotFile.yml === 'undefined' || lintbotFile.yml.length < 1);
+  const noFiles = (typeof lintbotFile.files === 'undefined' || lintbotFile.files.length < 1);
+  const noFunctionality = (typeof lintbotFile.functionality === 'undefined' || lintbotFile.functionality.length < 1);
+  const noScreeshots = (typeof lintbotFile.screenshots === 'undefined' || lintbotFile.screenshots.length < 1);
+  const noPerformance = (typeof lintbotFile.performance === 'undefined' || lintbotFile.performance.length < 1);
+  const noUnitTests = (typeof lintbotFile.unittests === 'undefined' || lintbotFile.unittests.length < 1);
 
-  if (noGit && noHtmlFiles && noCssFiles && noJsFiles && noMdFiles && noYmlFiles && noFiles && noFunctionality && noScreeshots && noPerformance) {
-    markbotMain.send('app:file-missing');
+  if (noGit && noHtmlFiles && noCssFiles && noJsFiles && noMdFiles && noYmlFiles && noFiles && noFunctionality && noScreeshots && noPerformance && noUnitTests) {
+    lintbotMain.send('app:file-missing');
 
     setTimeout(function () {
-      markbotMain.send('alert', 'Markbot cannot find any files or checks to run');
+      lintbotMain.send('alert', 'Lintbot cannot find any files or checks to run');
     }, 75);
 
     return false;
@@ -245,41 +274,41 @@ const hasFilesToCheck = function () {
 };
 
 const startChecks = function () {
-  let markbotGroup = `markbot-${Date.now()}`;
-  let repoOrFolder = (markbotFile.repo) ? markbotFile.repo : currentFolderPath.split(/[\\\/]/).pop();
+  let lintbotGroup = `lintbot-${Date.now()}`;
+  let repoOrFolder = (lintbotFile.repo) ? lintbotFile.repo : currentFolderPath.split(/[\\\/]/).pop();
 
-  markbotFile.cwd = currentFolderPath;
-  markbotFile.username = menuOptions.signOutUsername;
+  lintbotFile.cwd = currentFolderPath;
+  //lintbotFile.username = menuOptions.signOutUsername;
 
-  markbotMain.send('app:file-exists', repoOrFolder);
-  markbotMain.send('check-group:new', markbotGroup, 'Markbot file');
+  lintbotMain.send('app:file-exists', repoOrFolder);
+  lintbotMain.send('check-group:new', lintbotGroup, 'Lintbot file');
 
-  if (markbotFile.internalTemplate) {
-    markbotMain.send('check-group:item-new', markbotGroup, 'file', 'Not found');
-    markbotMain.send('check-group:item-complete', markbotGroup, 'file', 'Not found', [], [], ['**No MarkbotFile was found**, default settings are being used to check the website; you will not be able to submit this for grades—double-check that the original assignment was forked']);
-    markbotMain.send('check-group:item-new', markbotGroup, 'settings', 'Using default settings');
-    markbotMain.send('check-group:item-complete', markbotGroup, 'settings', 'Using default settings');
+  if (lintbotFile.internalTemplate) {
+    lintbotMain.send('check-group:item-new', lintbotGroup, 'file', 'Not found');
+    lintbotMain.send('check-group:item-complete', lintbotGroup, 'file', 'Not found', [], [], ['**No LintbotFile was found**, default settings are being used to check the code, which may not be what is being graded. Double-check that the original assignment was forked.']);
+    lintbotMain.send('check-group:item-new', lintbotGroup, 'settings', 'Using default settings');
+    lintbotMain.send('check-group:item-complete', lintbotGroup, 'settings', 'Using default settings');
   } else {
-    markbotMain.send('check-group:item-new', markbotGroup, 'file', 'Exists');
-    markbotMain.send('check-group:item-complete', markbotGroup, 'file', 'Exists');
+    lintbotMain.send('check-group:item-new', lintbotGroup, 'file', 'Exists');
+    lintbotMain.send('check-group:item-complete', lintbotGroup, 'file', 'Exists');
   }
 
-  checkManager.run(markbotFile, isCheater, function () {
-    markbotMain.send('app:all-done');
+  checkManager.run(lintbotFile, isCheater, function () {
+    lintbotMain.send('app:all-done');
   });
 };
 
-const handleMarkbotFile = function (mf, ignores, mfOriginal) {
-  markbotFile = mf;
-  markbotFileOriginal = mfOriginal;
-  markbotIgnoreFile = ignores;
+const handleLintbotFile = function (mf, ignores, mfOriginal) {
+  lintbotFile = mf;
+  lintbotFileOriginal = mfOriginal;
+  lintbotIgnoreFile = ignores;
 
-  if (mf.inheritFilesNotFound && mf.inheritFilesNotFound.length > 0) markbotMain.debug(`Inherited Markbot file(s) “${mf.inheritFilesNotFound.join(', ')}” not found`);
+  if (mf.inheritFilesNotFound && mf.inheritFilesNotFound.length > 0) lintbotMain.debug(`Inherited Lintbot file(s) “${mf.inheritFilesNotFound.join(', ')}” not found`);
 
   if (global.DEBUG) console.log(mf);
-  markbotMain.debug(`Server “web”: @@${serverManager.getHost('web')}@@`);
-  markbotMain.debug(`Server “html”: @@${serverManager.getHost('html')}@@`);
-  markbotMain.debug(`Server “language”: @@${serverManager.getHost('language')}@@`);
+  lintbotMain.debug(`Server “web”: @@${serverManager.getHost('web')}@@`);
+  lintbotMain.debug(`Server “html”: @@${serverManager.getHost('html')}@@`);
+  lintbotMain.debug(`Server “language”: @@${serverManager.getHost('language')}@@`);
 
   initializeInterface();
   updateAppMenu();
@@ -295,10 +324,10 @@ if (!gotTheLock) {
 } else {
   app.on('second-instance', (event, commandLine, workingDirectory) => {
     if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore()
+      if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus()
     }
-  })
+  });
   app.on('ready', () => {
     fixPath();
     updateAppMenu();
@@ -317,6 +346,7 @@ app.on('window-all-closed', function () {
 app.on('will-quit', () => {
   serverManager.stop();
   app.releaseSingleInstance();
+  app.releaseSingleInstanceLock();
   app.exit();
 });
 
@@ -337,13 +367,13 @@ exports.openRepo = function (path) {
   if (!mainWindow) {
     if (app.isReady()) {
       createWindows(() => {
-        markbotMain.send('app:file-dropped', path);
+        lintbotMain.send('app:file-dropped', path);
       });
     } else {
       startupCurrentFolderPath = path;
     }
   } else {
-    markbotMain.send('app:file-dropped', path);
+    lintbotMain.send('app:file-dropped', path);
   }
 };
 menuCallbacks.openRepo = exports.openRepo;
@@ -352,11 +382,11 @@ exports.fileMissing = function (path) {
   if (!mainWindow) {
     if (app.isReady()) {
       createWindows(() => {
-        markbotMain.send('app:file-missing');
+        lintbotMain.send('app:file-missing');
       });
     }
   } else {
-    markbotMain.send('app:file-missing');
+    lintbotMain.send('app:file-missing');
   }
 };
 menuCallbacks.fileMissing = exports.fileMissing;
@@ -367,11 +397,11 @@ app.on('open-file', function (e, path) {
 });
 
 exports.newDebugGroup = function (label) {
-  debugWindow.webContents.send('__markbot-debug-group', label);
+  debugWindow.webContents.send('__lintbot-debug-group', label);
 };
 
 exports.debug = function (args) {
-  debugWindow.webContents.send('__markbot-debug', ...args);
+  debugWindow.webContents.send('__lintbot-debug', ...args);
 };
 
 exports.revealFolder = function () {
@@ -381,17 +411,17 @@ exports.revealFolder = function () {
 };
 menuCallbacks.revealFolder = exports.revealFolder;
 
-exports.openProgressinator = function () {
-  shell.openExternal('https://progress.learn-the-web.algonquindesign.ca');
+exports.openCoursewebsite = function () {
+  shell.openExternal(config.coursewebsite);
 };
-menuCallbacks.openProgressinator = exports.openProgressinator;
+menuCallbacks.openCoursewebsite = exports.openCoursewebsite;
 
 exports.openBrowserToServer = function () {
   shell.openExternal(serverManager.getHost('web'));
 };
 menuCallbacks.openBrowserToServer = exports.openBrowserToServer;
 
-exports.createGitHubIssue = function () {
+/*exports.createGitHubIssue = function () {
   shell.openExternal(menuOptions.ghIssues.replace(/\{\{username\}\}/, menuOptions.signOutUsername));
 };
 menuCallbacks.createGitHubIssue = exports.createGitHubIssue;
@@ -399,10 +429,10 @@ menuCallbacks.createGitHubIssue = exports.createGitHubIssue;
 exports.openGitHubRepo = function () {
   shell.openExternal(menuOptions.ghRepo.replace(/\{\{username\}\}/, menuOptions.signOutUsername));
 };
-menuCallbacks.openGitHubRepo = exports.openGitHubRepo;
+menuCallbacks.openGitHubRepo = exports.openGitHubRepo;*/
 
-exports.submitAssignment = function () {
-  markbotMain.send('app:submit-assignment');
+/*exports.submitAssignment = function () {
+  lintbotMain.send('app:submit-assignment');
 };
 menuCallbacks.submitAssignment = exports.submitAssignment;
 
@@ -414,11 +444,21 @@ exports.enableSubmitAssignment = function () {
 exports.disableSubmitAssignment = function () {
   menuOptions.submitAssignment = false;
   updateAppMenu();
+};*/
+
+exports.enableOpenReports = function () {
+  menuOptions.openReports = true;
+  updateAppMenu();
+};
+
+exports.disableOpenReports = function () {
+  menuOptions.openReports = false;
+  updateAppMenu();
 };
 
 exports.openInCodeEditor = function () {
   if (currentFolderPath) {
-    exec(`open -b com.github.atom ${escapeShell(currentFolderPath)}`);
+    exec(`code ${escapeShell(currentFolderPath)}`);
   }
 };
 menuCallbacks.openInCodeEditor = exports.openInCodeEditor;
@@ -435,11 +475,11 @@ exports.disableFolderMenuFeatures = function () {
 };
 menuCallbacks.disableFolderMenuFeatures = exports.disableFolderMenuFeatures;
 
-exports.disableSignOut = function () {
+/*exports.disableSignOut = function () {
   menuOptions.openRepo = false;
   menuOptions.signOut = false;
   menuOptions.signOutUsername = false;
-  menuOptions.openProgressinator = false;
+  menuOptions.openCoursewebsite = false;
   updateAppMenu();
 };
 
@@ -449,14 +489,14 @@ exports.enableSignOut = function (username) {
 
   if (username && username !== 'false') {
     menuOptions.signOutUsername = username;
-    menuOptions.openProgressinator = true;
+    menuOptions.openCoursewebsite = true;
   }
 
   updateAppMenu();
-};
+};*/
 
 exports.copyReferenceScreenshots = function () {
-  markbotFile.screenshots.forEach(function (file) {
+  lintbotFile.screenshots.forEach(function (file) {
     let screenshotSizes;
 
     if (!file.sizes) return;
@@ -488,24 +528,37 @@ exports.copyReferenceScreenshots = function () {
 menuCallbacks.copyReferenceScreenshots = exports.copyReferenceScreenshots;
 
 exports.lockRequirements = function () {
-  actualFilesLocker.save(markbotLockFilePath);
+  actualFilesLocker.save(lintbotLockFilePath);
 };
 menuCallbacks.lockRequirements = exports.lockRequirements;
 
 exports.onFileDropped = function(filePath) {
-  markbotFilePath = path.resolve(filePath + '/' + MARKBOT_FILE);
-  markbotLockFilePath = path.resolve(filePath + '/' + MARKBOT_LOCK_FILE);
+
+  if (reportsWindow) reportsWindow.destroy();
+  if (debugWindow) debugWindow.destroy();
+  if (differWindow) differWindow.hide();
+
+  mainWindow.getChildWindows().forEach(function(win){
+    win.destroy();
+    win = null;
+  });
+
+  createreportsWindow();
+  createDebugWindow();
+
+  lintbotFilePath = path.resolve(filePath + '/' + LINTBOT_FILE);
+  lintbotLockFilePath = path.resolve(filePath + '/' + LINTBOT_LOCK_FILE);
   currentFolderPath = filePath;
 
   serverManager.getServer('web').setRoot(currentFolderPath);
 
-  if (exists.check(markbotFilePath)) {
-    markbotFileGenerator.get(markbotFilePath, handleMarkbotFile);
+  if (exists.check(lintbotFilePath)) {
+    lintbotFileGenerator.get(lintbotFilePath, handleLintbotFile);
   } else {
-    markbotFileGenerator.buildFromFolder(filePath, handleMarkbotFile);
+    lintbotFileGenerator.buildFromFolder(filePath, handleLintbotFile);
   }
 
-  if (differWindow) differWindow.hide();
+  mainWindow.focus();
 };
 
 exports.showDifferWindow = function (imgs, width) {
@@ -538,16 +591,16 @@ exports.showDifferWindow = function (imgs, width) {
   differWindow.webContents.executeJavaScript(js);
   differWindow.show();
   differWindow.setSize(width, 400);
-  global.markbotDifferWindow = differWindow.id;
+  //global.lintbotDifferWindow = differWindow.id;
 };
 
 exports.toggleDebug = function () {
-  let ignoreWindows = [global.markbotMainWindow, global.markbotDebugWindow];
+  let ignoreWindows = [global.lintbotMainWindow, global.lintbotDebugWindow];
 
   global.DEBUG = !global.DEBUG;
   menuOptions.debugChecked = global.DEBUG;
 
-  if (differWindow) ignoreWindows.push(global.markbotDifferWindow);
+  if (differWindow) ignoreWindows.push(global.lintbotDifferWindow);
 
   if (global.DEBUG) {
     BrowserWindow.getAllWindows().forEach(function (win) {
@@ -570,34 +623,34 @@ menuCallbacks.toggleDebug = exports.toggleDebug;
 
 exports.focusToolbar = function () {
   mainWindow.focus();
-  markbotMain.send('app:focus-toolbar');
+  lintbotMain.send('app:focus-toolbar');
 };
 menuCallbacks.focusToolbar = exports.focusToolbar;
 
 exports.focusCheckList = function () {
   mainWindow.focus();
-  markbotMain.send('app:focus-checklist');
+  lintbotMain.send('app:focus-checklist');
 };
 menuCallbacks.focusCheckList = exports.focusCheckList;
 
 exports.focusErrorList = function () {
   mainWindow.focus();
-  markbotMain.send('app:focus-errorlist');
+  lintbotMain.send('app:focus-errorlist');
 };
 menuCallbacks.focusErrorList = exports.focusErrorList;
 
-exports.submitAssessment = function (ghUsername, apiToken, details, next) {
+/*exports.submitAssessment = function (ghUsername, apiToken, details, next) {
   let requestOptions = {
     'url': `${config.progressinatorApi}/submit-assessment`,
     'headers': {
       'Authorization': `Token ${apiToken}`,
-      'User-Agent': `Markbot/${appPkg.version}`,
+      'User-Agent': `Lintbot/${appPkg.version}`,
     },
     'json': true,
     'body': {
       'github_username': ghUsername,
-      'submitted_by': `Markbot/${appPkg.version}`,
-      'assessment_uri': `ca.learn-the-web.exercises.${markbotFile.repo}`,
+      'submitted_by': `Lintbot/${appPkg.version}`,
+      'assessment_uri': `ca.learn-the-web.exercises.${lintbotFile.repo}`,
       'grade': 1,
       'cheated': isCheater.cheated,
       'details': details,
@@ -612,15 +665,47 @@ exports.submitAssessment = function (ghUsername, apiToken, details, next) {
     isCheater.cheated,
     config.passcodeHash,
   ];
-  const markbotMouth = isCheater.cheated ? '〜' : '◡';
+  const lintbotMouth = isCheater.cheated ? '〜' : '◡';
   const possibleQuotes = require('./frontend/main/success-messages.json');
   const quote = isCheater.cheated ? 'Cheater' : possibleQuotes[Math.floor(Math.random() * possibleQuotes.length)];
 
   requestOptions.body.signature = hash.update(JSON.stringify(bodyForSig), 'ascii').digest('hex');
-  requestOptions.body.details.comment = `└[ ◕ ${markbotMouth} ◕ ]┘ Markbot says, “${quote}!”`;
+  requestOptions.body.details.comment = `└[ ◕ ${lintbotMouth} ◕ ]┘ Lintbot says, “${quote}!”`;
 
   request.post(requestOptions, function (err, res, body) {
     if (err) return next(true);
     next(false, res.statusCode, body);
   });
 }
+*/
+
+const createreportsWindow = function () {
+  if (!reportsWindow) {
+    reportsWindow = new BrowserWindow({
+      width: 900,
+      minWidth: 600,
+      height: 600,
+      minHeight: 400,
+      show: false
+    });
+    reportsWindow.setTitle('Mocha Reports');
+    reportsWindow.on('close', function (e) {
+      e.preventDefault();
+      reportsWindow.hide();
+    });
+    reportsWindow.on('closed', function () {
+      reportsWindow = null;
+    });
+    let reportsHtml = 'file://' + __dirname + '/frontend/reports/reports.html';
+    reportsWindow.loadURL( reportsHtml );
+  }
+}
+
+exports.showReportsWindow = function (){
+  reportsWindow.show();
+  reportsWindow.focus();
+};
+
+exports.reportsWindowTab = function(fp, ll){
+  reportsWindow.webContents.send('make-reports-window-tab', fp, ll)
+};

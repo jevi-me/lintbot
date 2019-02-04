@@ -6,8 +6,8 @@ const yaml = require('js-yaml');
 const merge = require('merge-objects');
 const glob = require('glob');
 
-const markbotMain = require('./markbot-main');
-const markbotIgnoreParser = require('./markbot-ignore-parser');
+const lintbotMain = require('./lintbot-main');
+const lintbotIgnoreParser = require('./lintbot-ignore-parser');
 const exists = require('./file-exists');
 const stripPath = require('./strip-path');
 
@@ -32,44 +32,44 @@ const getAlternativeExtensions = function (ext) {
   }
 };
 
-const isCheckingAccessibility = function (markbotFile) {
-  if (markbotFile.allFiles && markbotFile.allFiles.html && markbotFile.allFiles.html.accessibility) return true;
+const isCheckingAccessibility = function (lintbotFile) {
+  if (lintbotFile.allFiles && lintbotFile.allFiles.html && lintbotFile.allFiles.html.accessibility) return true;
 
-  if (markbotFile.html) {
-    let i = 0, total = markbotFile.html.length;
+  if (lintbotFile.html) {
+    let i = 0, total = lintbotFile.html.length;
 
     for (i = 0; i < total; i++) {
-      if (markbotFile.html[i].accessibility) return true;
+      if (lintbotFile.html[i].accessibility) return true;
     }
   }
 
   return false;
 };
 
-const bindAccessibilityProperties = function (markbotFile) {
+const bindAccessibilityProperties = function (lintbotFile) {
   const forcedProperties = [
     'outline',
   ];
 
-  if (markbotFile.allFiles && markbotFile.allFiles.html && markbotFile.allFiles.html.accessibility) {
+  if (lintbotFile.allFiles && lintbotFile.allFiles.html && lintbotFile.allFiles.html.accessibility) {
     forcedProperties.forEach((prop) => {
-      markbotFile.allFiles.html[prop] = true;
+      lintbotFile.allFiles.html[prop] = true;
     });
   }
 
-  if (markbotFile.html) {
-    let i = 0, total = markbotFile.html.length;
+  if (lintbotFile.html) {
+    let i = 0, total = lintbotFile.html.length;
 
     for (i = 0; i < total; i++) {
-      if (markbotFile.html[i].accessibility) {
+      if (lintbotFile.html[i].accessibility) {
         forcedProperties.forEach((prop) => {
-          markbotFile.html[i][prop] = true;
+          lintbotFile.html[i][prop] = true;
         });
       }
     }
   }
 
-  return markbotFile;
+  return lintbotFile;
 };
 
 const findCompatibleFiles = function (folderpath, ignore, ext) {
@@ -96,15 +96,15 @@ const findCompatibleFiles = function (folderpath, ignore, ext) {
   return files;
 };
 
-const mergeInheritedFiles = function (markbotFile) {
-  let newMarkbotFile = {
+const mergeInheritedFiles = function (lintbotFile) {
+  let newLintbotFile = {
     inheritFilesNotFound: [],
   };
   let templates = [];
 
-  if (typeof markbotFile.inherit === 'string') markbotFile.inherit = [markbotFile.inherit];
+  if (typeof lintbotFile.inherit === 'string') lintbotFile.inherit = [lintbotFile.inherit];
 
-  markbotFile.inherit.forEach((templateId) => {
+  lintbotFile.inherit.forEach((templateId) => {
     let inheritPath = path.resolve(`${__dirname}/../templates/${templateId}.yml`);
 
     if (exists.check(inheritPath)) {
@@ -113,115 +113,115 @@ const mergeInheritedFiles = function (markbotFile) {
         if (y) templates.push(y);
       } catch (e) {
         let ln = (e.mark && e.mark.line) ? e.mark.line + 1 : '?';
-        markbotMain.debug(`Error in the \`${templateId}\` template MarkbotFile, line ${ln}: ${e.message}`);
+        lintbotMain.debug(`Error in the \`${templateId}\` template LintbotFile, line ${ln}: ${e.message}`);
       }
     } else {
-      newMarkbotFile.inheritFilesNotFound.push(templateId);
+      newLintbotFile.inheritFilesNotFound.push(templateId);
     }
   });
 
   templates.forEach((file) => {
     if (file.allFiles && file.allFiles.functionality && !Array.isArray(file.allFiles.functionality)) file.allFiles.functionality = [file.allFiles.functionality];
 
-    newMarkbotFile = merge(newMarkbotFile, file);
+    newLintbotFile = merge(newLintbotFile, file);
   });
 
-  newMarkbotFile = merge(newMarkbotFile, markbotFile);
+  newLintbotFile = merge(newLintbotFile, lintbotFile);
 
-  return newMarkbotFile;
+  return newLintbotFile;
 };
 
-const bindFunctionalityToHtmlFiles = function (markbotFile) {
-  if (markbotFile.allFiles && markbotFile.allFiles.functionality && markbotFile.html) {
-    if (!markbotFile.functionality) markbotFile.functionality = [];
+const bindFunctionalityToHtmlFiles = function (lintbotFile) {
+  if (lintbotFile.allFiles && lintbotFile.allFiles.functionality && lintbotFile.html) {
+    if (!lintbotFile.functionality) lintbotFile.functionality = [];
 
-    markbotFile.html.forEach((file) => {
-      markbotFile.allFiles.functionality.forEach((func) => {
-        markbotFile.functionality.push(merge({ path: file.path }, func));
+    lintbotFile.html.forEach((file) => {
+      lintbotFile.allFiles.functionality.forEach((func) => {
+        lintbotFile.functionality.push(merge({ path: file.path }, func));
       })
     });
   }
 
-  return markbotFile;
+  return lintbotFile;
 };
 
-const bindScreenshotsToHtmlFiles = function (markbotFile) {
-  if (markbotFile.allFiles && markbotFile.allFiles.html && markbotFile.allFiles.html.screenshots) {
-    if (!markbotFile.screenshots) markbotFile.screenshots = [];
+const bindScreenshotsToHtmlFiles = function (lintbotFile) {
+  if (lintbotFile.allFiles && lintbotFile.allFiles.html && lintbotFile.allFiles.html.screenshots) {
+    if (!lintbotFile.screenshots) lintbotFile.screenshots = [];
 
-    markbotFile.html.forEach((item, i) => {
-      markbotFile.screenshots.push({
+    lintbotFile.html.forEach((item, i) => {
+      lintbotFile.screenshots.push({
         path: item.path,
-        sizes: markbotFile.allFiles.html.screenshots,
+        sizes: lintbotFile.allFiles.html.screenshots,
       });
     });
   }
 
-  return markbotFile;
+  return lintbotFile;
 };
 
-const mergeAllFilesProperties = function (markbotFile, key) {
-  if (!markbotFile[key]) return markbotFile;
+const mergeAllFilesProperties = function (lintbotFile, key) {
+  if (!lintbotFile[key]) return lintbotFile;
 
-  markbotFile[key].forEach((item, i) => {
-    if (!markbotFile.allFiles[key]) return;
+  lintbotFile[key].forEach((item, i) => {
+    if (!lintbotFile.allFiles[key]) return;
 
-    if ('path' in markbotFile[key][i] && markbotFile.allFiles[key].except) {
-      if (markbotFile.allFiles[key].except.includes(markbotFile[key][i].path)) return;
+    if ('path' in lintbotFile[key][i] && lintbotFile.allFiles[key].except) {
+      if (lintbotFile.allFiles[key].except.includes(lintbotFile[key][i].path)) return;
     }
 
-    markbotFile[key][i] = merge(Object.assign({}, markbotFile.allFiles[key]), item);
+    lintbotFile[key][i] = merge(Object.assign({}, lintbotFile.allFiles[key]), item);
   });
 
-  return markbotFile;
+  return lintbotFile;
 };
 
-const bindAllFilesProperties = function (folderpath, ignoreFiles, markbotFile, next) {
-  const keys = ['html', 'css', 'js', 'md', 'yml', 'files', 'functionality', 'performance'];
+const bindAllFilesProperties = function (folderpath, ignoreFiles, lintbotFile, next) {
+  const keys = ['html', 'css', 'js', 'md', 'yml', 'files', 'functionality', 'performance', 'unittests'];
 
   keys.forEach((key) => {
-    if (!markbotFile[key] && !markbotFile.allFiles[key]) return;
+    if (!lintbotFile[key] && !lintbotFile.allFiles[key]) return;
 
-    if (markbotFile.allFiles[key] && !markbotFile[key]) {
+    if (lintbotFile.allFiles[key] && !lintbotFile[key]) {
       let files = findCompatibleFiles(folderpath, ignoreFiles, getAlternativeExtensions(key));
 
-      if (!files) next(markbotFile);
+      if (!files) next(lintbotFile);
 
       files.forEach((file) => {
-        if (!markbotFile[key]) markbotFile[key] = [];
+        if (!lintbotFile[key]) lintbotFile[key] = [];
 
-        markbotFile[key].push({ path: stripPath(file, folderpath), });
+        lintbotFile[key].push({ path: stripPath(file, folderpath), });
       });
     }
 
-    markbotFile = mergeAllFilesProperties(markbotFile, key);
+    lintbotFile = mergeAllFilesProperties(lintbotFile, key);
   });
 
-  next(markbotFile);
+  next(lintbotFile);
 };
 
-const removeDuplicateScreenshotSizes = function (markbotFile) {
-  if (!markbotFile.screenshots) return markbotFile;
+const removeDuplicateScreenshotSizes = function (lintbotFile) {
+  if (!lintbotFile.screenshots) return lintbotFile;
 
-  markbotFile.screenshots.forEach((item, i) => {
-    if (Array.isArray(markbotFile.screenshots[i].sizes)) {
-      markbotFile.screenshots[i].sizes = [...new Set(markbotFile.screenshots[i].sizes)];
+  lintbotFile.screenshots.forEach((item, i) => {
+    if (Array.isArray(lintbotFile.screenshots[i].sizes)) {
+      lintbotFile.screenshots[i].sizes = [...new Set(lintbotFile.screenshots[i].sizes)];
     }
   });
 
-  return markbotFile;
+  return lintbotFile;
 };
 
-const mergeDuplicateFiles = function (markbotFile) {
-  const keys = ['html', 'css', 'js', 'md', 'yml', 'files', 'performance'];
+const mergeDuplicateFiles = function (lintbotFile) {
+  const keys = ['html', 'css', 'js', 'md', 'yml', 'files', 'performance', 'unittests'];
 
   keys.forEach((key) => {
     let paths = {};
     let dirs = {};
 
-    if (!markbotFile[key]) return;
+    if (!lintbotFile[key]) return;
 
-    markbotFile[key].forEach((item, i) => {
+    lintbotFile[key].forEach((item, i) => {
       if (!item.path) return;
 
       if (item.path in paths) {
@@ -231,7 +231,7 @@ const mergeDuplicateFiles = function (markbotFile) {
       }
     });
 
-    markbotFile[key].forEach((item, i) => {
+    lintbotFile[key].forEach((item, i) => {
       if (!item.directory) return;
 
       if (item.directory in dirs) {
@@ -241,78 +241,78 @@ const mergeDuplicateFiles = function (markbotFile) {
       }
     });
 
-    markbotFile[key] = [];
+    lintbotFile[key] = [];
 
     Object.keys(paths).forEach((path) => {
-      markbotFile[key].push(paths[path]);
+      lintbotFile[key].push(paths[path]);
     });
 
     Object.keys(dirs).forEach((path) => {
-      markbotFile[key].push(dirs[path]);
+      lintbotFile[key].push(dirs[path]);
     });
   });
 
-  return removeDuplicateScreenshotSizes(markbotFile);
+  return removeDuplicateScreenshotSizes(lintbotFile);
 };
 
-const populateDefaults = function (folderpath, ignoreFiles, markbotFile, next) {
-  const markbotFileOriginal = JSON.parse(JSON.stringify(markbotFile));
+const populateDefaults = function (folderpath, ignoreFiles, lintbotFile, next) {
+  const lintbotFileOriginal = JSON.parse(JSON.stringify(lintbotFile));
 
-  if (isCheckingAccessibility(markbotFile)) {
-    if (markbotFile.inherit) {
-      markbotFile.inherit = [...new Set(markbotFile.inherit.concat(accessibilityTemplates))];
+  if (isCheckingAccessibility(lintbotFile)) {
+    if (lintbotFile.inherit) {
+      lintbotFile.inherit = [...new Set(lintbotFile.inherit.concat(accessibilityTemplates))];
     } else {
-      markbotFile.inherit = accessibilityTemplates;
+      lintbotFile.inherit = accessibilityTemplates;
     }
 
-    markbotFile = bindAccessibilityProperties(markbotFile);
+    lintbotFile = bindAccessibilityProperties(lintbotFile);
   }
 
-  if (!markbotFile.allFiles && !markbotFile.inherit) return next(markbotFile, ignoreFiles, markbotFileOriginal);
-  if (markbotFile.inherit) markbotFile = mergeInheritedFiles(markbotFile);
+  if (!lintbotFile.allFiles && !lintbotFile.inherit) return next(lintbotFile, ignoreFiles, lintbotFileOriginal);
+  if (lintbotFile.inherit) lintbotFile = mergeInheritedFiles(lintbotFile);
 
-  if (markbotFile.allFiles) {
-    bindAllFilesProperties(folderpath, ignoreFiles, markbotFile, (mf) => {
-      next(mergeDuplicateFiles(bindScreenshotsToHtmlFiles(bindFunctionalityToHtmlFiles(mf))), ignoreFiles, markbotFileOriginal);
+  if (lintbotFile.allFiles) {
+    bindAllFilesProperties(folderpath, ignoreFiles, lintbotFile, (mf) => {
+      next(mergeDuplicateFiles(bindScreenshotsToHtmlFiles(bindFunctionalityToHtmlFiles(mf))), ignoreFiles, lintbotFileOriginal);
     });
   } else {
-    next(mergeDuplicateFiles(markbotFile), ignoreFiles, markbotFileOriginal);
+    next(mergeDuplicateFiles(lintbotFile), ignoreFiles, lintbotFileOriginal);
   }
 }
 
-const getMarkbotFile = function (markbotFilePath, next) {
-  let markbotFile, folderpath;
+const getLintbotFile = function (lintbotFilePath, next) {
+  let lintbotFile, folderpath;
 
   try {
-    markbotFile = yaml.safeLoad(fs.readFileSync(markbotFilePath, 'utf8'));
+    lintbotFile = yaml.safeLoad(fs.readFileSync(lintbotFilePath, 'utf8'));
   } catch (e) {
     let ln = (e.mark && e.mark.line) ? e.mark.line + 1 : '?';
-    markbotMain.debug(`Error in the folder’s MarkbotFile, line ${ln}: ${e.message}`);
+    lintbotMain.debug(`Error in the folder’s LintbotFile, line ${ln}: ${e.message}`);
   }
 
-  folderpath = path.parse(markbotFilePath).dir;
+  folderpath = path.parse(lintbotFilePath).dir;
 
-  markbotIgnoreParser.parse(folderpath, (ignoreFiles) => {
-    populateDefaults(folderpath, ignoreFiles, markbotFile, next);
+  lintbotIgnoreParser.parse(folderpath, (ignoreFiles) => {
+    populateDefaults(folderpath, ignoreFiles, lintbotFile, next);
   });
 };
 
 const buildFromFolder = function (folderpath, next) {
-  let markbotFile;
+  let lintbotFile;
 
   try {
-    markbotFile = yaml.safeLoad(fs.readFileSync(path.resolve(__dirname + '/../templates/basic-dropped-folder.yml'), 'utf8'));
+    lintbotFile = yaml.safeLoad(fs.readFileSync(path.resolve(__dirname + '/../templates/basic-dropped-folder.yml'), 'utf8'));
   } catch (e) {
     let ln = (e.mark && e.mark.line) ? e.mark.line + 1 : '?';
-    markbotMain.debug(`Error in the \`basic-dropped-folder\` MarkbotFile, line ${ln}: ${e.message}`);
+    lintbotMain.debug(`Error in the \`basic-dropped-folder\` LintbotFile, line ${ln}: ${e.message}`);
   }
 
-  markbotIgnoreParser.parse(folderpath, (ignoreFiles) => {
-    populateDefaults(folderpath, ignoreFiles, markbotFile, next);
+  lintbotIgnoreParser.parse(folderpath, (ignoreFiles) => {
+    populateDefaults(folderpath, ignoreFiles, lintbotFile, next);
   });
 };
 
 module.exports = {
-  get: getMarkbotFile,
+  get: getLintbotFile,
   buildFromFolder: buildFromFolder
 };
