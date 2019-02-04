@@ -2,7 +2,7 @@
 
 const util = require('util');
 const merge = require('merge-objects');
-const markbotMain = require('../markbot-main');
+const lintbotMain = require('../lintbot-main');
 const messageGroup = require(`${__dirname}/message-group`);
 
 const cleanRegex = function (regex) {
@@ -51,7 +51,7 @@ const convertToHasNotObject = function (search) {
 };
 
 const bypass = function (checkGroup, checkId, checkLabel) {
-  markbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
+  lintbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
 };
 
 const findSearchErrors = function (fileContents, searches) {
@@ -92,12 +92,12 @@ const findSearchNotErrors = function (fileContents, searchNot) {
 const check = function (checkGroup, checkId, checkLabel, fileContents, search, searchNot, next) {
   let allMessages = {};
 
-  markbotMain.send('check-group:item-computing', checkGroup, checkId);
+  lintbotMain.send('check-group:item-computing', checkGroup, checkId);
 
   if (search) allMessages = merge(allMessages, findSearchErrors(fileContents, search));
   if (searchNot) allMessages = merge(allMessages, findSearchNotErrors(fileContents, searchNot));
 
-  markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, allMessages.errors, allMessages.messages, allMessages.warnings);
+  lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, allMessages.errors, allMessages.messages, allMessages.warnings);
   next();
 };
 
@@ -107,7 +107,7 @@ module.exports.init = function (group) {
     let checkLabel = 'Expected content';
     let checkId = 'content';
 
-    markbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
+    lintbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
 
     return {
       check: function (fileContents, search, searchNot, next) {

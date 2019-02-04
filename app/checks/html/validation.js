@@ -5,7 +5,7 @@ const path = require('path');
 const http = require('http');
 const exec = require('child_process').exec;
 const escapeShell = require(`${__dirname}/../../escape-shell`);
-const markbotMain = require('electron').remote.require('./app/markbot-main');
+const lintbotMain = require('electron').remote.require('./app/lintbot-main');
 const serverManager = require('electron').remote.require('./app/server-manager');
 const userAgentService = require(`${__dirname}/../../user-agent-service`);
 
@@ -26,13 +26,13 @@ const shouldIncludeError = function (message, line) {
 };
 
 const bypass = function (checkGroup, checkId, checkLabel) {
-  markbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
+  lintbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
 };
 
 const check = function (checkGroup, checkId, checkLabel, fullPath, fileContents, lines, next) {
   const validatorPath = path.resolve(__dirname.replace(/app.asar[\/\\]/, 'app.asar.unpacked/') + '/../../../vendor/html-validator');
   const hostInfo = serverManager.getHostInfo('html');
-  const crashMessage = 'Unable to connect to the HTML validator; the background process may have crashed. Please quit & restart Markbot.';
+  const crashMessage = 'Unable to connect to the HTML validator; the background process may have crashed. Please quit & restart Lintbot.';
   let messages = {};
   let errors = [];
 
@@ -64,8 +64,8 @@ const check = function (checkGroup, checkId, checkLabel, fullPath, fileContents,
           messages = JSON.parse(data.join(''));
         } catch (e) {
           errors.push(crashMessage);
-          markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
-          markbotMain.send('restart', crashMessage);
+          lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
+          lintbotMain.send('restart', crashMessage);
           return next(errors);
         }
 
@@ -77,12 +77,12 @@ const check = function (checkGroup, checkId, checkLabel, fullPath, fileContents,
           });
         }
 
-        markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
+        lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
         return next(errors);
       } else {
         errors.push(crashMessage);
-        markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
-        markbotMain.send('restart', crashMessage);
+        lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
+        lintbotMain.send('restart', crashMessage);
         return next(errors);
       }
     });
@@ -90,13 +90,13 @@ const check = function (checkGroup, checkId, checkLabel, fullPath, fileContents,
 
   req.on('error', () => {
     errors.push(crashMessage);
-    markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
-    markbotMain.send('restart', crashMessage);
+    lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
+    lintbotMain.send('restart', crashMessage);
     return next(errors);
   });
 
-  markbotMain.debug(`@@${validatorPath}@@`);
-  markbotMain.send('check-group:item-computing', checkGroup, checkId);
+  lintbotMain.debug(`@@${validatorPath}@@`);
+  lintbotMain.send('check-group:item-computing', checkGroup, checkId);
 
   req.end(fileContents, 'utf8');
 };
@@ -107,7 +107,7 @@ module.exports.init = function (group) {
     const checkId = 'validation';
     const checkLabel = 'Validation';
 
-    markbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
+    lintbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
 
     return {
       check: function (fullPath, fileContents, lines, next) {

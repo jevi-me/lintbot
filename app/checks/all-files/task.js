@@ -2,7 +2,7 @@
   'use strict';
 
   const path = require('path');
-  const markbotMain = require('electron').remote.require('./app/markbot-main');
+  const lintbotMain = require('electron').remote.require('./app/lintbot-main');
   const htmlUnique = require(__dirname + '/checks/all-files/html-unique');
 
   const group = taskDetails.group;
@@ -12,8 +12,8 @@
   let uniqueCapture = {};
   let uniqueErrors = [];
 
-  markbotMain.send('check-group:item-new', group, id, label);
-  markbotMain.send('check-group:item-computing', group, id, label);
+  lintbotMain.send('check-group:item-new', group, id, label);
+  lintbotMain.send('check-group:item-computing', group, id, label);
 
   taskDetails.options.files.forEach(function (file) {
     let uniqueFinds = htmlUnique.find(taskDetails.cwd, file, taskDetails.options.unique);
@@ -35,6 +35,6 @@
     }
   }
 
-  markbotMain.send('check-group:item-complete', group, id, label, uniqueErrors);
+  lintbotMain.send('check-group:item-complete', group, id, label, uniqueErrors);
   done();
 }());

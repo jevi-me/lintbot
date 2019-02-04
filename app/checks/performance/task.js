@@ -5,7 +5,7 @@
   const merge = require('merge-objects');
   const webcoach = require('webcoach');
   const ipcRenderer = require('electron').ipcRenderer;
-  const markbotMain = require('electron').remote.require('./app/markbot-main');
+  const lintbotMain = require('electron').remote.require('./app/lintbot-main');
   const serverManager = require('electron').remote.require('./app/server-manager');
   const classify = require(`${__dirname}/classify`);
   const exists = require(`${__dirname}/file-exists`);
@@ -43,10 +43,10 @@
   const makeJs = function (ipcListenerLabel) {
     return `
       (function () {
-        const webcoach = window.__markbot.getTestingService('perf');
+        const webcoach = window.__lintbot.getTestingService('perf');
 
         webcoach.getDomAdvice().then(function (data) {
-          window.__markbot.sendMessageToWindow(${taskRunnerId}, '__markbot-hidden-browser-perf-dom-advice-${ipcListenerLabel}', JSON.stringify(eval(data)));
+          window.__lintbot.sendMessageToWindow(${taskRunnerId}, '__lintbot-hidden-browser-perf-dom-advice-${ipcListenerLabel}', JSON.stringify(eval(data)));
         });
       }());
     `;
@@ -135,10 +135,10 @@
     let win;
     let har;
 
-    ipcRenderer.on('__markbot-hidden-browser-perf-dom-advice-' + ipcListenerLabel, function (event, data) {
+    ipcRenderer.on('__lintbot-hidden-browser-perf-dom-advice-' + ipcListenerLabel, function (event, data) {
       var domAdvice = JSON.parse(data);
 
-      ipcRenderer.removeAllListeners('__markbot-hidden-browser-perf-dom-advice-' + ipcListenerLabel);
+      ipcRenderer.removeAllListeners('__lintbot-hidden-browser-perf-dom-advice-' + ipcListenerLabel);
       webLoader.destroy(win);
       win = null;
 
@@ -155,7 +155,7 @@
           errors.push(budgetDetails);
         }
 
-        markbotMain.debug(`Performance score: ${coachAdvice.score}`);
+        lintbotMain.debug(`Performance score: ${coachAdvice.score}`);
 
         Object.keys(coachAdvice.performance.adviceList).forEach(function (id) {
           let advice = coachAdvice.performance.adviceList[id];
@@ -168,20 +168,20 @@
         });
 
         if (errors.length <= 0) {
-          markbotMain.send('check-group:item-complete', group, file.path, label, false, messages);
+          lintbotMain.send('check-group:item-complete', group, file.path, label, false, messages);
         } else {
-          markbotMain.send('check-group:item-complete', group, file.path, label, errors, messages);
+          lintbotMain.send('check-group:item-complete', group, file.path, label, errors, messages);
         }
 
         checkNextPath();
       });
     });
 
-    markbotMain.send('check-group:item-new', group, file.path, label);
-    markbotMain.send('check-group:item-computing', group, file.path, label);
+    lintbotMain.send('check-group:item-new', group, file.path, label);
+    lintbotMain.send('check-group:item-computing', group, file.path, label);
 
     if (!exists.check(path.resolve(fullPath + '/' + file.path))) {
-      markbotMain.send('check-group:item-complete', group, file.path, label, [`Performance metrics couldn’t be calculated — \`${file.path}\` is missing or misspelled`]);
+      lintbotMain.send('check-group:item-complete', group, file.path, label, [`Performance metrics couldn’t be calculated — \`${file.path}\` is missing or misspelled`]);
       return checkNextPath();
     }
 
@@ -190,7 +190,7 @@
       har = theHar;
 
       if (typeof theHar !== 'object' || !theHar.log || !theHar.log.pages || theHar.log.pages <= 0) {
-        markbotMain.send('check-group:item-complete', group, file.path, label, [`Performance metrics couldn’t be calculated — \`${file.path}\` is missing or misspelled`]);
+        lintbotMain.send('check-group:item-complete', group, file.path, label, [`Performance metrics couldn’t be calculated — \`${file.path}\` is missing or misspelled`]);
         return checkNextPath();
       }
 

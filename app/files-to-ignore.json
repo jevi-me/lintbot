@@ -6,5 +6,12 @@
   "_site",
   "tmp",
   "Desktop\\.ini",
-  "Thumbs\\.db"
+  "Thumbs\\.db",
+  "TestResults",
+  "Reflection",
+  "README",
+  "test",
+  "utils",
+  "students",
+  "images"
 ]

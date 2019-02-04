@@ -1,8 +1,8 @@
 # Install the Java Development Kit on Windows
 
-*Markbot requires a few extra tools installed on your computer to function properly.*
+*Lintbot requires a few extra tools installed on your computer to function properly.*
 
-**The Java Development Kit allows Markbot to run the HTML validator, CSS validator & and the language checker.**
+**The Java Development Kit allows Lintbot to run the HTML validator, CSS validator & and the language checker.**
 
 Go to the JDK download page on [Oracle’s Java Downloads](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html) website.
 

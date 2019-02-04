@@ -10,7 +10,7 @@
   const imageSize = require('image-size');
   const cheerio = require('cheerio');
   const merge = require('merge-objects');
-  const markbotMain = require('electron').remote.require('./app/markbot-main');
+  const lintbotMain = require('electron').remote.require('./app/lintbot-main');
   const stripPath = require(__dirname + '/strip-path');
   const exists = require(__dirname + '/file-exists');
   const listDir = require(__dirname + '/list-dir');
@@ -300,35 +300,35 @@
     const fullPath = path.resolve(`${folderPath}/${file.path}`);
     const fileExists = exists.check(fullPath);
 
-    markbotMain.send('check-group:item-new', group, file.path, file.path);
-    markbotMain.send('check-group:item-computing', group, file.path, file.path);
+    lintbotMain.send('check-group:item-new', group, file.path, file.path);
+    lintbotMain.send('check-group:item-computing', group, file.path, file.path);
 
     if (file.hasOwnProperty('exists') && file.exists === false && fileExists) {
-      markbotMain.send('check-group:item-complete', group, file.path, file.path, [`The \`${file.path}\` file is unnecessary and should be deleted`]);
+      lintbotMain.send('check-group:item-complete', group, file.path, file.path, [`The \`${file.path}\` file is unnecessary and should be deleted`]);
       return next();
     }
 
     if (file.hasOwnProperty('exists') && file.exists === false && !fileExists) {
-      markbotMain.send('check-group:item-complete', group, file.path, file.path);
+      lintbotMain.send('check-group:item-complete', group, file.path, file.path);
       return next();
     }
 
     if (!fileExists) {
-      markbotMain.send('check-group:item-complete', group, file.path, file.path, [`The \`${file.path}\` file is missing or misspelled`]);
+      lintbotMain.send('check-group:item-complete', group, file.path, file.path, [`The \`${file.path}\` file is missing or misspelled`]);
       return next();
     }
 
     if (isGif(file.path)) {
-      markbotMain.send('check-group:item-complete', group, file.path, file.path, [`The \`${file.path}\` image is a GIF — **don’t use GIFs**`]);
+      lintbotMain.send('check-group:item-complete', group, file.path, file.path, [`The \`${file.path}\` image is a GIF — **don’t use GIFs**`]);
       return next();
     }
 
     if (isImage(file.path)) {
       checkImage(file, fullPath, function (err, warnings) {
         if (err) {
-          markbotMain.send('check-group:item-complete', group, file.path, file.path, err, false, warnings);
+          lintbotMain.send('check-group:item-complete', group, file.path, file.path, err, false, warnings);
         } else {
-          markbotMain.send('check-group:item-complete', group, file.path, file.path, false, false, warnings);
+          lintbotMain.send('check-group:item-complete', group, file.path, file.path, false, false, warnings);
         }
 
         next();
@@ -336,9 +336,9 @@
     } else {
       checkTextFile(file, fullPath, function (err) {
         if (err) {
-          markbotMain.send('check-group:item-complete', group, file.path, file.path, err);
+          lintbotMain.send('check-group:item-complete', group, file.path, file.path, err);
         } else {
-          markbotMain.send('check-group:item-complete', group, file.path, file.path);
+          lintbotMain.send('check-group:item-complete', group, file.path, file.path);
         }
 
         next();
@@ -352,8 +352,8 @@
   };
 
   if (taskDetails.options.files.length <= 0) {
-    markbotMain.send('check-group:item-new', group, 'files', `Files`);
-    markbotMain.send('check-group:item-complete', group, 'files', `Files`, [`There are no files to check`]);
+    lintbotMain.send('check-group:item-new', group, 'files', `Files`);
+    lintbotMain.send('check-group:item-complete', group, 'files', `Files`, [`There are no files to check`]);
     return done();
   }
 
@@ -362,15 +362,15 @@
       const fullPath = path.resolve(`${taskDetails.cwd}/${file.directory}`);
 
       if (!exists.check(fullPath)) {
-        markbotMain.send('check-group:item-new', group, file.directory, `${file.directory}/`);
-        markbotMain.send('check-group:item-complete', group, file.directory, `${file.directory}/`, [`The \`${file.directory}/\` folder is missing or misspelled`]);
+        lintbotMain.send('check-group:item-new', group, file.directory, `${file.directory}/`);
+        lintbotMain.send('check-group:item-complete', group, file.directory, `${file.directory}/`, [`The \`${file.directory}/\` folder is missing or misspelled`]);
         return checkIfDone();
       }
 
       listDir(fullPath, function(dirFiles) {
         if (!dirFiles || dirFiles.length <= 0) {
-          markbotMain.send('check-group:item-new', group, file.directory, `${file.directory}/`);
-          markbotMain.send('check-group:item-complete', group, file.directory, `${file.directory}/`, false, false, [`The \`${file.directory}/\` folder is empty`]);
+          lintbotMain.send('check-group:item-new', group, file.directory, `${file.directory}/`);
+          lintbotMain.send('check-group:item-complete', group, file.directory, `${file.directory}/`, false, false, [`The \`${file.directory}/\` folder is empty`]);
           return checkIfDone();
         }
 

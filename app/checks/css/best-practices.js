@@ -2,7 +2,7 @@
 
 const util = require('util');
 const linter = require('stylelint');
-const markbotMain = require('electron').remote.require('./app/markbot-main');
+const lintbotMain = require('electron').remote.require('./app/lintbot-main');
 const viewportChecker = require(__dirname + '/best-practices/viewport');
 
 const ERROR_MESSAGE_STATUS = require(`${__dirname}/../../error-message-status`);
@@ -26,7 +26,7 @@ const shouldIncludeError = function (message, line, lines, fileContents) {
 };
 
 const bypass = function (checkGroup, checkId, checkLabel) {
-  markbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
+  lintbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
 };
 
 const check = function (checkGroup, checkId, checkLabel, fileContents, lines, next) {
@@ -34,12 +34,12 @@ const check = function (checkGroup, checkId, checkLabel, fileContents, lines, ne
   let checkViewport;
   const stylelintConfig = getStyleLintConfig();
 
-  markbotMain.send('check-group:item-computing', checkGroup, checkId);
+  lintbotMain.send('check-group:item-computing', checkGroup, checkId);
 
   checkViewport = viewportChecker.check(fileContents, lines);
 
   if (checkViewport && checkViewport.length > 0) {
-    markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, checkViewport, false, false, ERROR_MESSAGE_STATUS.SKIP);
+    lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, checkViewport, false, false, ERROR_MESSAGE_STATUS.SKIP);
     return next();
   }
 
@@ -53,7 +53,7 @@ const check = function (checkGroup, checkId, checkLabel, fileContents, lines, ne
         });
       }
 
-      markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
+      lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
       next();
     })
     .catch(function (err) {
@@ -63,7 +63,7 @@ const check = function (checkGroup, checkId, checkLabel, fileContents, lines, ne
         errors.push('There was an error running the test—please refresh and try again');
       }
 
-      markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
+      lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
       next();
     })
   ;
@@ -75,7 +75,7 @@ module.exports.init = function (group) {
     const checkLabel = 'Best practices & indentation';
     const checkId = 'best-practices';
 
-    markbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
+    lintbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
 
     return {
       check: function (fileContents, lines, next) {

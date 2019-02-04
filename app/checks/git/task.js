@@ -2,7 +2,7 @@
   'use strict';
 
   const path = require('path');
-  const markbotMain = require('electron').remote.require('./app/markbot-main');
+  const lintbotMain = require('electron').remote.require('./app/lintbot-main');
   const commits = require(__dirname + '/checks/git/commits');
   const status = require(__dirname + '/checks/git/status');
   const bestPractices = require(__dirname + '/checks/git/best-practices');

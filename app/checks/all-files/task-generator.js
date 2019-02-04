@@ -1,15 +1,15 @@
 'use strict';
 
-module.exports.generateTaskList = function (markbotFile, isCheater) {
+module.exports.generateTaskList = function (lintbotFile, isCheater) {
   var tasks = [];
 
-  if (markbotFile.html && markbotFile.allFiles && markbotFile.allFiles.html && markbotFile.allFiles.html.unique) {
+  if (lintbotFile.html && lintbotFile.allFiles && lintbotFile.allFiles.html && lintbotFile.allFiles.html.unique) {
     tasks.push({
       group: `html-unique-${Date.now()}`,
       groupLabel: 'All files',
       options: {
-        files: markbotFile.html,
-        unique: markbotFile.allFiles.html.unique,
+        files: lintbotFile.html,
+        unique: lintbotFile.allFiles.html.unique,
       },
     });
   }

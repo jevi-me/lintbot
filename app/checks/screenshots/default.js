@@ -10,7 +10,7 @@ window.addEventListener('resize', function () {
       window.requestAnimationFrame(function () {
         window.requestAnimationFrame(function () {
           window.requestAnimationFrame(function () {
-            window.__markbot.sendMessageToWindow(taskRunnerId, listenerLabel, windowId, document.documentElement.clientWidth, document.documentElement.offsetHeight);
+            window.__lintbot.sendMessageToWindow(taskRunnerId, listenerLabel, windowId, document.documentElement.clientWidth, document.documentElement.offsetHeight);
           });
         });
       });

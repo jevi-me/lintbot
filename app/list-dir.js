@@ -3,14 +3,14 @@
 const path = require('path');
 const dir = require('node-dir');
 const stripPath = require('./strip-path');
-const markbotIgnoreParser = require('./markbot-ignore-parser');
+const lintbotIgnoreParser = require('./lintbot-ignore-parser');
 const filesToIgnore = require('./files-to-ignore.json');
 
 module.exports = function (dirPath, next) {
   const fullPath = path.resolve(dirPath);
   const matcher = new RegExp(`^(?:${filesToIgnore.join('|')})`);
 
-  markbotIgnoreParser.parse(fullPath, (ignoreFiles) => {
+  lintbotIgnoreParser.parse(fullPath, (ignoreFiles) => {
     const ignoreMatcher = (ignoreFiles.length > 0) ? new RegExp(`^(?:${ignoreFiles.join('|')})`) : false;
 
     dir.files(fullPath, (err, files) =>{

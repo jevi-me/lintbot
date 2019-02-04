@@ -4,7 +4,7 @@ const electron = require('electron');
 const dialog = electron.dialog;
 const shell = electron.shell;
 const pkg = require('../package');
-const markbotMain = require('./markbot-main');
+const lintbotMain = require('./lintbot-main');
 
 module.exports.getMenuTemplate = function (app, cbs, opts) {
   var template = [
@@ -33,7 +33,7 @@ module.exports.getMenuTemplate = function (app, cbs, opts) {
           enabled: (opts && opts.runChecks) ? true : false,
           accelerator: 'CmdOrCtrl+R',
           click: function (item, focusedWindow) {
-            markbotMain.send('app:re-run');
+            lintbotMain.send('app:re-run');
           }
         },
         {
@@ -66,7 +66,7 @@ module.exports.getMenuTemplate = function (app, cbs, opts) {
             cbs.openBrowserToServer();
           }
         },
-        {
+        /*{
           label: 'Browse Live Website',
           enabled: (opts && opts.viewLive) ? true : false,
           accelerator: 'CmdOrCtrl+Shift+B',
@@ -84,23 +84,23 @@ module.exports.getMenuTemplate = function (app, cbs, opts) {
         },
         {
           type: 'separator'
-        },
+        },*/
         {
-          label: 'View Your Progress',
-          enabled: (opts && opts.openProgressinator) ? true : false,
+          label: 'View Course Website',
+          enabled: (opts && opts.openCoursewebsite) ? true : false,
           accelerator: 'CmdOrCtrl+P',
           click: function (item, focusedWindow) {
-            cbs.openProgressinator();
+            cbs.openCoursewebsite();
           }
         },
-        {
+        /*{
           label: 'Submit Assignment',
           enabled: (opts && opts.submitAssignment) ? true : false,
           accelerator: 'CmdOrCtrl+S',
           click: function (item, focusedWindow) {
             cbs.submitAssignment();
           }
-        },
+        },*/
       ]
     },
     {
@@ -166,7 +166,7 @@ module.exports.getMenuTemplate = function (app, cbs, opts) {
       label: 'Help',
       role: 'help',
       submenu: [
-        {
+        /*{
           label: 'Get Assignment Help on GitHub',
           enabled: (opts && opts.signOutUsername && opts.ghIssues) ? true : false,
           click: function () {
@@ -175,32 +175,32 @@ module.exports.getMenuTemplate = function (app, cbs, opts) {
         },
         {
           type: 'separator'
-        },
+        },*/
         {
-          label: 'Markbot License',
+          label: 'Lintbot License',
           click: function () {
-            shell.openExternal('https://github.com/thomasjbradley/markbot/blob/master/LICENSE');
+            shell.openExternal('https://github.com/jevi-me/lintbot/blob/master/LICENSE');
           }
         },
         {
-          label: 'Markbot Website',
+          label: 'Lintbot Website',
           click: function () {
-            shell.openExternal('https://github.com/thomasjbradley/markbot/');
+            shell.openExternal('https://github.com/jevi-me/lintbot/');
           }
         },
         {
           type: 'separator'
         },
         {
-          label: 'Markbot Support',
+          label: 'Lintbot Support',
           click: function () {
-            shell.openExternal('https://github.com/thomasjbradley/markbot/issues/');
+            shell.openExternal('https://github.com/jevi-me/lintbot/issues/');
           }
         },
         {
           label: 'Send Feedback…',
           click: function () {
-            shell.openExternal('mailto:bradlet@algonquincollege.com');
+            shell.openExternal('mailto:hello@jevi.me');
           }
         },
       ]
@@ -210,7 +210,7 @@ module.exports.getMenuTemplate = function (app, cbs, opts) {
   if (process.platform == 'darwin') {
     // MacOS application menu
     template.unshift({
-      label: 'Markbot',
+      label: 'Lintbot',
       submenu: [
         {
           label: `Version ${pkg.version}`,
@@ -219,16 +219,16 @@ module.exports.getMenuTemplate = function (app, cbs, opts) {
         {
           type: 'separator'
         },
-        {
+        /*{
           label: (opts && opts.signOutUsername) ? 'Sign Out (' + opts.signOutUsername + ')' : 'Sign In',
           enabled: (opts && opts.signOut) ? true : false,
           click:  function(item, focusedWindow) {
-            markbotMain.send('app:sign-out');
+            lintbotMain.send('app:sign-out');
           }
         },
         {
           type: 'separator'
-        },
+        },*/
         {
           role: 'hide'
         },
@@ -268,7 +268,7 @@ module.exports.getMenuTemplate = function (app, cbs, opts) {
         label: (opts && opts.signOutUsername) ? 'Sign Out (' + opts.signOutUsername + ')' : 'Sign Out',
         enabled: (opts && opts.signOut) ? true : false,
         click:  function(item, focusedWindow) {
-          markbotMain.send('app:sign-out');
+          lintbotMain.send('app:sign-out');
         }
       },
       {

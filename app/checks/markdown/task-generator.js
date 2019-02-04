@@ -1,10 +1,10 @@
 'use strict';
 
-module.exports.generateTaskList = function (markbotFile, isCheater) {
+module.exports.generateTaskList = function (lintbotFile, isCheater) {
   var tasks = [];
 
-  if (markbotFile.md) {
-    markbotFile.md.forEach(function (file) {
+  if (lintbotFile.md) {
+    lintbotFile.md.forEach(function (file) {
       let task = {
         group: `md-${file.path}-${Date.now()}`,
         groupLabel: file.path,

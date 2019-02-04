@@ -5,11 +5,11 @@ const util = require('util');
 const markdownlint = require('markdownlint');
 const frontMatter = require('front-matter');
 const S = require('string');
-const markbotMain = require('electron').remote.require('./app/markbot-main');
+const lintbotMain = require('electron').remote.require('./app/lintbot-main');
 const markdownLintConfig = require(`${__dirname}/validation/markdownlint.json`);
 
 const bypass = function (checkGroup, checkId, checkLabel) {
-  markbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
+  lintbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
 };
 
 const check = function (checkGroup, checkId, checkLabel, fullPath, fileContents, next) {
@@ -21,7 +21,7 @@ const check = function (checkGroup, checkId, checkLabel, fullPath, fileContents,
     strings: {},
   };
 
-  markbotMain.send('check-group:item-computing', checkGroup, checkId);
+  lintbotMain.send('check-group:item-computing', checkGroup, checkId);
   markdownlintOpts.strings[filename] = fileContents;
 
   try {
@@ -55,12 +55,12 @@ const check = function (checkGroup, checkId, checkLabel, fullPath, fileContents,
       errors.unshift({
         type: 'intro',
         message: 'Refer to the Markdown & YAML cheat sheet to help understand these errors:',
-        link: 'https://learn-the-web.algonquindesign.ca/topics/markdown-yaml-cheat-sheet/',
+        link: 'https://learn-the-web.algonquindesign.ca/topics/markdown-yaml-cheat-sheet/', //TODO: Fix link to algonquindesign
         linkText: 'https://mkbt.io/md-yml-cheat-sheet/',
       });
     }
 
-    markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
+    lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
     next(errors);
   });
 };
@@ -71,7 +71,7 @@ module.exports.init = function (group) {
     const checkId = 'validation';
     const checkLabel = 'Validation & best practices';
 
-    markbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
+    lintbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
 
     return {
       check: function (fullPath, fileContents, next) {

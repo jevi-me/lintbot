@@ -2,7 +2,7 @@
   'use strict';
 
   const path = require('path');
-  const markbotMain = require('electron').remote.require('./app/markbot-main');
+  const lintbotMain = require('electron').remote.require('./app/lintbot-main');
   const listDir = require(__dirname + '/list-dir');
   const stripPath = require(__dirname + '/strip-path');
 
@@ -43,13 +43,13 @@
   const restrictedLabel = 'Restricted files';
 
   if (taskDetails.options.naming) {
-    markbotMain.send('check-group:item-new', taskDetails.group, 'naming', namingLabel);
-    markbotMain.send('check-group:item-computing', taskDetails.group, 'naming');
+    lintbotMain.send('check-group:item-new', taskDetails.group, 'naming', namingLabel);
+    lintbotMain.send('check-group:item-computing', taskDetails.group, 'naming');
   }
 
   if (taskDetails.options.restrictFileTypes) {
-    markbotMain.send('check-group:item-new', taskDetails.group, 'file-types', restrictedLabel);
-    markbotMain.send('check-group:item-computing', taskDetails.group, 'file-types');
+    lintbotMain.send('check-group:item-new', taskDetails.group, 'file-types', restrictedLabel);
+    lintbotMain.send('check-group:item-computing', taskDetails.group, 'file-types');
   }
 
   listDir(fullPath, function(files) {
@@ -59,7 +59,7 @@
     const introError = {
       type: 'intro',
       message: 'Refer to the naming conventions cheat sheet to help understand these errors:',
-      link: 'https://learn-the-web.algonquindesign.ca/topics/naming-paths-cheat-sheet/',
+      link: 'https://learn-the-web.algonquindesign.ca/topics/naming-paths-cheat-sheet/', //TODO: Fix link to algonquindesign
       linkText: 'https://mkbt.io/name-cheat-sheet/',
     };
 
@@ -81,13 +81,13 @@
     if (taskDetails.options.naming) {
       if (namingErrors.length > 0) namingErrors.unshift(introError);
 
-      markbotMain.send('check-group:item-complete', taskDetails.group, 'naming', namingLabel, namingErrors);
+      lintbotMain.send('check-group:item-complete', taskDetails.group, 'naming', namingLabel, namingErrors);
     }
 
     if (taskDetails.options.restrictFileTypes) {
       if (restrictedErrors.length > 0) restrictedErrors.unshift(introError);
 
-      markbotMain.send('check-group:item-complete', taskDetails.group, 'file-types', restrictedLabel, restrictedErrors);
+      lintbotMain.send('check-group:item-complete', taskDetails.group, 'file-types', restrictedLabel, restrictedErrors);
     }
 
     done();

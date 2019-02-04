@@ -1,7 +1,7 @@
 'use strict';
 
 const ipcRenderer = require('electron').ipcRenderer;
-const markbotMain = require('electron').remote.require('./app/markbot-main');
+const lintbotMain = require('electron').remote.require('./app/lintbot-main');
 const webLoader = require(`${__dirname}/../../web-loader`);
 
 const warningRules = [
@@ -19,13 +19,13 @@ const makeJs = function () {
   return `
     (function () {
       const axeRules = JSON.parse('${JSON.stringify(axeRules)}');
-      const axe = window.__markbot.getTestingService('a11y');
+      const axe = window.__lintbot.getTestingService('a11y');
 
       axe.run(document, axeRules, (err, results) => {
         if (err) {
-          window.__markbot.sendMessageToWindow(${taskRunnerId}, '__markbot-hidden-browser-a11y-error-${taskRunnerId}', 'There was an error running the accessibility tests—try running Markbot again');
+          window.__lintbot.sendMessageToWindow(${taskRunnerId}, '__lintbot-hidden-browser-a11y-error-${taskRunnerId}', 'There was an error running the accessibility tests—try running Lintbot again');
         } else {
-          window.__markbot.sendMessageToWindow(${taskRunnerId}, '__markbot-hidden-browser-a11y-advice-${taskRunnerId}', JSON.stringify(results));
+          window.__lintbot.sendMessageToWindow(${taskRunnerId}, '__lintbot-hidden-browser-a11y-advice-${taskRunnerId}', JSON.stringify(results));
         }
       });
     }());
@@ -173,20 +173,20 @@ const constructPositiveMessage = function (numPass, numFail) {
 };
 
 const bypass = function (checkGroup, checkId, checkLabel) {
-  markbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
+  lintbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
 };
 
 const check = function (checkGroup, checkId, checkLabel, taskRunnerId, file, next) {
   let win;
 
   const cleanup = function () {
-    ipcRenderer.removeAllListeners(`__markbot-hidden-browser-a11y-advice-${taskRunnerId}`);
-    ipcRenderer.removeAllListeners(`__markbot-hidden-browser-a11y-error-${taskRunnerId}`);
+    ipcRenderer.removeAllListeners(`__lintbot-hidden-browser-a11y-advice-${taskRunnerId}`);
+    ipcRenderer.removeAllListeners(`__lintbot-hidden-browser-a11y-error-${taskRunnerId}`);
     webLoader.destroy(win);
     win = null;
   };
 
-  ipcRenderer.on(`__markbot-hidden-browser-a11y-advice-${taskRunnerId}`, (event, results) => {
+  ipcRenderer.on(`__lintbot-hidden-browser-a11y-advice-${taskRunnerId}`, (event, results) => {
     const a11yResults = JSON.parse(results);
     let errors = [];
     let messages = [];
@@ -198,7 +198,7 @@ const check = function (checkGroup, checkId, checkLabel, taskRunnerId, file, nex
     const introError = {
       type: 'intro',
       message: 'Refer to the accessibility checklist to help understand these errors:',
-      link: 'https://learn-the-web.algonquindesign.ca/topics/accessibility-checklist/',
+      link: 'https://learn-the-web.algonquindesign.ca/topics/accessibility-checklist/', //TODO: Fix link to algonquindesign
       linkText: 'https://mkbt.io/a11y-checklist/',
     };
 
@@ -206,7 +206,7 @@ const check = function (checkGroup, checkId, checkLabel, taskRunnerId, file, nex
 
     if (numFails <= 0) {
       messages.push(constructPositiveMessage(numPasses, numFails));
-      markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors, messages, warnings);
+      lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors, messages, warnings);
       return next();
     }
 
@@ -233,17 +233,17 @@ console.log(item);
 
     if (positiveMessage.grade >= 75) messages.push(positiveMessage);
 
-    markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors, messages, warnings);
+    lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors, messages, warnings);
     next();
   });
 
-  ipcRenderer.on(`__markbot-hidden-browser-a11y-error-${taskRunnerId}`, (event, errMsg) => {
+  ipcRenderer.on(`__lintbot-hidden-browser-a11y-error-${taskRunnerId}`, (event, errMsg) => {
     cleanup();
-    markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, [errMsg]);
+    lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, [errMsg]);
     next();
   });
 
-  markbotMain.send('check-group:item-computing', checkGroup, checkId);
+  lintbotMain.send('check-group:item-computing', checkGroup, checkId);
 
   webLoader.load(taskRunnerId, file.path, {}, (theWindow) => {
     win = theWindow;
@@ -257,7 +257,7 @@ module.exports.init = function (group) {
     const checkLabel = 'Accessibility';
     const checkId = 'a11y';
 
-    markbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
+    lintbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
 
     return {
       check: function (taskRunnerId, file, next) {

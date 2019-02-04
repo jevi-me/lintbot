@@ -1,14 +1,14 @@
 'use strict';
 
-module.exports.generateTaskList = function (markbotFile) {
+module.exports.generateTaskList = function (lintbotFile) {
   var tasks = [];
 
-  if (markbotFile.functionality) {
+  if (lintbotFile.functionality) {
     let task = {
       group: `functionality-${Date.now()}`,
       groupLabel: 'Functionality',
       options: {
-        files: markbotFile.functionality,
+        files: lintbotFile.functionality,
       },
     };
 

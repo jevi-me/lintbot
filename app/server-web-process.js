@@ -22,7 +22,7 @@ const getErrorPage = function (errcode) {
   return fs
     .readFileSync(errorView, 'utf-8')
     .replace(/{{errno}}/g, errcode)
-    .replace(/{{markbotversion}}/g, pkg.version)
+    .replace(/{{lintbotversion}}/g, pkg.version)
     ;
 };
 
