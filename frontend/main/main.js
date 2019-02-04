@@ -83,20 +83,10 @@ const ERROR_MESSAGE_TYPE = {
 
 const appReady = function () {
   if (!sessionStorage.appIsReady) return false;
-
   $loader.dataset.state = 'hidden';
   $dependencies.dataset.state = 'hidden';
-
-    if (localStorage.getItem('github-username') && localStorage.getItem('progressinator-api-token')) {
-        //$signin.dataset.state = 'hidden';
-        $dropbox.dataset.state = 'visible';
-        //lintbot.enableSignOut(localStorage.getItem('github-username'));
-        $openCoursewebsiteBtn.removeAttribute('disabled');
-    } else {
-        //$signin.dataset.state = 'visible';
-        $dropbox.dataset.state = 'hidden';
-        $openCoursewebsiteBtn.setAttribute('disabled', true);
-    }
+  $dropbox.dataset.state = 'visible';
+  $openCoursewebsiteBtn.removeAttribute('disabled');
 };
 
 
@@ -741,7 +731,7 @@ const startChecks = function () {
 };
 
 const fileDropped = function (path) {
-    if (localStorage.getItem('github-username') && localStorage.getItem('progressinator-api-token')) {
+    //if (localStorage.getItem('github-username') && localStorage.getItem('progressinator-api-token')) {
         reset();
         fullPath = path;
         startChecks();
@@ -757,7 +747,7 @@ const fileDropped = function (path) {
         $openBrowserBtn.removeAttribute('disabled');
         //$openRepoBtn.removeAttribute('disabled');
         //$createIssueBtn.removeAttribute('disabled');
-    }
+    //}
 };
 
 const statusBarUpdate = function () {
