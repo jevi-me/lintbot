@@ -64,10 +64,11 @@
     "pack-bg": "tiffutil -cathidpicheck ./build/background.png ./build/background@2x.png -out ./build/background.tiff",
     "pack-mac": "npm run pack-files && build -m --dir",
     "pack-win": "npm run pack-files && build -w --dir",
-    "pack": "npm run pack-files && build -mw --dir",
+    "pack-linux": "npm run pack-files && build -l --dir",
+    "pack": "npm run pack-files && build -mwl --dir",
     "build-mac": "npm run pack-bg && npm run pack-files && build -m",
     "build-win": "npm run pack-files && build -w",
-    "build": "npm run pack-bg && npm run pack-files && build -lmw",
+    "build": "yarn run pack-bg && yarn run pack-files && build -lmw",
     "hash-passcode": "node ./scripts/hash-passcode.js",
     "gen-https-cert": "./scripts/gen-https-cert.sh"
   },
