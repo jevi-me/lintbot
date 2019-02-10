@@ -1,18 +1,18 @@
 'use strict';
 
-module.exports.generateTaskList = function (markbotFile) {
+module.exports.generateTaskList = function (lintbotFile) {
   var tasks = [];
 
-  if (markbotFile.naming || markbotFile.restrictFileTypes) {
+  if (lintbotFile.naming || lintbotFile.restrictFileTypes) {
     let task = {
       group: `naming-${Date.now()}`,
       groupLabel: 'Naming & file restrictions',
       options: {},
     };
 
-    if (markbotFile.naming) task.options.naming = true;
-    if (markbotFile.restrictFileTypes) task.options.restrictFileTypes = true;
-    if (markbotFile.namingIgnore) task.options.namingIgnore = markbotFile.namingIgnore;
+    if (lintbotFile.naming) task.options.naming = true;
+    if (lintbotFile.restrictFileTypes) task.options.restrictFileTypes = true;
+    if (lintbotFile.namingIgnore) task.options.namingIgnore = lintbotFile.namingIgnore;
 
     tasks.push(task);
   }

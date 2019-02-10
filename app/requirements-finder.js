@@ -2,17 +2,17 @@
 
 const path = require('path');
 const exists = require('./file-exists');
-const markbotMain = require('./markbot-main');
+const lintbotMain = require('./lintbot-main');
 const screenshotNamingService = require('./checks/screenshots/naming-service');
 
 let missingFiles = [];
 
-const lockMarkbotFile = function (locker, markbotFile) {
-  locker.lockString('markbot', JSON.stringify(markbotFile));
+const lockLintbotFile = function (locker, lintbotFile) {
+  locker.lockString('lintbot', JSON.stringify(lintbotFile));
 };
 
-const lockMarkbotIgnoreFile = function (locker, markbotIgnoreFile) {
-  locker.lockString('markbotignore', JSON.stringify(markbotIgnoreFile));
+const lockLintbotIgnoreFile = function (locker, lintbotIgnoreFile) {
+  locker.lockString('lintbotignore', JSON.stringify(lintbotIgnoreFile));
 };
 
 const lockFiles = function (locker, currentFolderPath, files) {
@@ -48,23 +48,23 @@ const lockScreenshots = function (locker, currentFolderPath, files) {
   });
 };
 
-const lock = function (locker, currentFolderPath, markbotFileParsed, markbotFile, markbotIgnoreFile) {
+const lock = function (locker, currentFolderPath, lintbotFileParsed, lintbotFile, lintbotIgnoreFile) {
   missingFiles = [];
   locker.reset();
 
-  lockMarkbotFile(locker, markbotFile);
-  lockMarkbotIgnoreFile(locker, markbotIgnoreFile);
+  lockLintbotFile(locker, lintbotFile);
+  lockLintbotIgnoreFile(locker, lintbotIgnoreFile);
 
-  if (markbotFile.html) lockFiles(locker, currentFolderPath, markbotFile.html);
-  if (markbotFile.css) lockFiles(locker, currentFolderPath, markbotFile.css);
-  if (markbotFile.js) lockFiles(locker, currentFolderPath, markbotFile.js);
-  if (markbotFile.screenshots) lockScreenshots(locker, currentFolderPath, markbotFile.screenshots);
-  if (markbotFileParsed.screenshots) lockScreenshots(locker, currentFolderPath, markbotFileParsed.screenshots);
+  if (lintbotFile.html) lockFiles(locker, currentFolderPath, lintbotFile.html);
+  if (lintbotFile.css) lockFiles(locker, currentFolderPath, lintbotFile.css);
+  if (lintbotFile.js) lockFiles(locker, currentFolderPath, lintbotFile.js);
+  if (lintbotFile.screenshots) lockScreenshots(locker, currentFolderPath, lintbotFile.screenshots);
+  if (lintbotFileParsed.screenshots) lockScreenshots(locker, currentFolderPath, lintbotFileParsed.screenshots);
 
   missingFiles = [...new Set(missingFiles)];
 
   if (missingFiles.length > 0) {
-    markbotMain.send('alert', `The following files could not be locked because they’re missing:\n• ${missingFiles.join('\n• ')}`);
+    lintbotMain.send('alert', `The following files could not be locked because they’re missing:\n• ${missingFiles.join('\n• ')}`);
   }
 };
 

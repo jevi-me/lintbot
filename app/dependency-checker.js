@@ -4,7 +4,7 @@ const exec = require('child_process').exec;
 
 let previousCheck = false;
 
-const hasGit = function () {
+/*const hasGit = function () {
   return new Promise((resolve, reject) => {
     exec('git --version', (err, data, stderr) => {
       const commandFailed = /command failed/i;
@@ -34,7 +34,7 @@ const hasGit = function () {
       return resolve(false);
     });
   });
-};
+};*/
 
 const hasJava = function () {
   return new Promise((resolve, reject) => {
@@ -56,19 +56,19 @@ const check = function (next) {
   // log.info('## Dependencies');
 
   Promise.all([
-    hasGit(),
+    //hasGit(),
     hasJava(),
   ]).then((results) => {
     previousCheck = {
       hasMissingDependencies: (results.includes(false)) ? true : false,
-      hasGit: results[0],
-      hasJava: results[1],
+      //hasGit: results[0],
+      hasJava: results[0],
     };
     next(previousCheck);
   }).catch((e) => {
     next({
       hasMissingDependencies: true,
-      hasGit: false,
+      //hasGit: false,
       hasJava: false,
     });
   });

@@ -13,7 +13,7 @@ const is = require('electron-is');
 const gitCommits = require('git-commits');
 const exists = require(`${__dirname}/../../file-exists`);
 const escapeShell = require(`${__dirname}/../../escape-shell`);
-const markbotMain = require('electron').remote.require('./app/markbot-main');
+const lintbotMain = require('electron').remote.require('./app/lintbot-main');
 const serverManager = require('electron').remote.require('./app/server-manager');
 const userAgentService = require(`${__dirname}/../../user-agent-service`);
 const verbsWhiteList = require(`${__dirname}/best-practices/verb-whitelist.json`);
@@ -93,11 +93,11 @@ const checkSpellingAndGrammer = function (commit) {
 };
 
 const checkCommits = function (commits, group, id, label, next) {
-  const crashMessage = 'Cannot connect to the spelling & grammar checking tool; the background process may have crashed. Please quit & restart Markbot.';
+  const crashMessage = 'Cannot connect to the spelling & grammar checking tool; the background process may have crashed. Please quit & restart Lintbot.';
   let errors = [];
 
   if (commits.length <= 0) {
-    markbotMain.send('check-group:item-complete', group, id, label);
+    lintbotMain.send('check-group:item-complete', group, id, label);
     return next();
   }
 
@@ -105,8 +105,8 @@ const checkCommits = function (commits, group, id, label, next) {
     commits.slice(0, MAX_COMMITS_TO_CHECK).map(checkSpellingAndGrammer)
   ).then((results) => {
     if (results.length <= 0) {
-      markbotMain.send('check-group:item-complete', group, id, label, [crashMessage]);
-      markbotMain.send('restart', crashMessage);
+      lintbotMain.send('check-group:item-complete', group, id, label, [crashMessage]);
+      lintbotMain.send('restart', crashMessage);
       return next();
     }
 
@@ -122,7 +122,7 @@ const checkCommits = function (commits, group, id, label, next) {
       try {
         data = JSON.parse(info);
       } catch (e) {
-        markbotMain.send('check-group:item-complete', group, id, label, [`Cannot connect to the spelling & grammar checking tool — check that Java is properly installed`]);
+        lintbotMain.send('check-group:item-complete', group, id, label, [`Cannot connect to the spelling & grammar checking tool — check that Java is properly installed`]);
         return next();
       }
 
@@ -146,17 +146,17 @@ const checkCommits = function (commits, group, id, label, next) {
       errors.unshift({
         type: 'intro',
         message: 'Refer to the Git commit message cheat sheet to help understand these errors:',
-        link: 'https://learn-the-web.algonquindesign.ca/topics/commit-message-cheat-sheet/',
+        link: 'https://learn-the-web.algonquindesign.ca/topics/commit-message-cheat-sheet/', //TODO: Fix link to algonquindesign
         linkText: 'https://mkbt.io/git-cheat-sheet/',
       });
     }
 
-    markbotMain.send('check-group:item-complete', group, id, label, false, false, errors);
+    lintbotMain.send('check-group:item-complete', group, id, label, false, false, errors);
     next();
   })
   .catch((reason) => {
-    markbotMain.send('check-group:item-complete', group, id, label, [crashMessage]);
-    markbotMain.send('restart', crashMessage);
+    lintbotMain.send('check-group:item-complete', group, id, label, [crashMessage]);
+    lintbotMain.send('restart', crashMessage);
     return next();
   })
   ;
@@ -169,7 +169,7 @@ module.exports.check = function (fullPath, ignoreCommitEmails, group, next) {
   let studentCommits = [];
   let exists = false;
 
-  markbotMain.send('check-group:item-new', group, id, label);
+  lintbotMain.send('check-group:item-new', group, id, label);
 
   try {
     exists = fs.statSync(repoPath).isDirectory();
@@ -178,11 +178,11 @@ module.exports.check = function (fullPath, ignoreCommitEmails, group, next) {
   }
 
   if (!exists) {
-    markbotMain.send('check-group:item-complete', group, id, label, ['Not a Git repository']);
+    lintbotMain.send('check-group:item-complete', group, id, label, ['Not a Git repository']);
     return next();
   }
 
-  markbotMain.send('check-group:item-computing', group, id, label);
+  lintbotMain.send('check-group:item-computing', group, id, label);
 
   gitCommits(repoPath)
     .on('data', (commit) => {
@@ -192,7 +192,7 @@ module.exports.check = function (fullPath, ignoreCommitEmails, group, next) {
       checkCommits(studentCommits, group, id, label, next);
     })
     .on('error', function (err) {
-      markbotMain.send('check-group:item-complete', group, id, label, [`Not a Git repository or no commits`]);
+      lintbotMain.send('check-group:item-complete', group, id, label, [`Not a Git repository or no commits`]);
       return next();
     })
   ;

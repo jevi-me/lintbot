@@ -2,27 +2,27 @@
 
 const is = require('electron-is');
 
-let markbotMain;
+let lintbotMain;
 
 const init = function (main) {
   let electron;
 
   if (is.renderer()) {
     electron = require('electron').remote;
-    markbotMain = electron.BrowserWindow.fromId(electron.getGlobal('markbotMainWindow')).webContents;
+    lintbotMain = electron.BrowserWindow.fromId(electron.getGlobal('lintbotMainWindow')).webContents;
   } else {
     electron = require('electron');
-    markbotMain = electron.BrowserWindow.fromId(global.markbotMainWindow).webContents;
+    lintbotMain = electron.BrowserWindow.fromId(global.lintbotMainWindow).webContents;
   }
 };
 
 const destroy = function () {
-  markbotMain = null;
-}
+  lintbotMain = null;
+};
 
 const send = function (label, ...messages) {
   init();
-  markbotMain.send(label, ...messages);
+  lintbotMain.send(label, ...messages);
   destroy();
 };
 

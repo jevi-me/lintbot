@@ -2,14 +2,15 @@
 <html lang="en-ca">
 <head>
   <meta charset="utf-8">
-  <title>HTTP/{{errno}} · Markbot Web Server</title>
+  <title>HTTP/{{errno}} · Lintbot Web Server</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
+    /*
     @font-face { font-family: "SF Mono"; font-weight: 200; font-style: normal; src: url("file:///Applications/Utilities/Terminal.app/Contents/Resources/Fonts/SFMono-Light.otf"); }
     @font-face { font-family: "SF Mono"; font-weight: 200; font-style: italic; src: url("file:///Applications/Utilities/Terminal.app/Contents/Resources/Fonts/SFMono-LightItalic.otf"); }
     @font-face { font-family: "SF Mono"; font-weight: 400; font-style: normal; src: url("file:///Applications/Utilities/Terminal.app/Contents/Resources/Fonts/SFMono-Regular.otf"); }
     @font-face { font-family: "SF Mono"; font-weight: 400; font-style: italic; src: url("file:///Applications/Utilities/Terminal.app/Contents/Resources/Fonts/SFMono-RegularItalic.otf"); }
-
+    */
     html {
       box-sizing: border-box;
       overflow: hidden;
@@ -140,9 +141,9 @@
     <h1 class="error-{{errno}}">HTTP/{{errno}}</h1>
     <p class="error-message error-message-big error-message-404"><strong>File Not Found</strong></p>
     <p class="error-message error-message-big error-message-500"><strong>Internal Server Error</strong></p>
-    <p class="error-message error-message-404"><em>Markbot’s web server was unable to locate the requested file.</em> Double check that the filename is spelled properly.</p>
-    <p class="error-message error-message-500"><em>Markbot’s web server was ran into an internal server error.</em> Please try refreshing the browser.</p>
-    <small>Markbot/{{markbotversion}}</small>
+    <p class="error-message error-message-404"><em>Lintbot’s web server was unable to locate the requested file.</em> Double check that the filename is spelled properly.</p>
+    <p class="error-message error-message-500"><em>Lintbot’s web server was ran into an internal server error.</em> Please try refreshing the browser.</p>
+    <small>Lintbot/{{lintbotversion}}</small>
   </main>
 
 </body>

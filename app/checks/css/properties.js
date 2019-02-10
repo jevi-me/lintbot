@@ -2,7 +2,7 @@
 
 const css = require('css');
 const merge = require('merge-objects');
-const markbotMain = require('electron').remote.require('./app/markbot-main');
+const lintbotMain = require('electron').remote.require('./app/lintbot-main');
 const messageGroup = require(`${__dirname}/../message-group`);
 
 const convertToCheckObject = function (sel, opts) {
@@ -65,7 +65,7 @@ const convertToHasNotObject = function (sel) {
 };
 
 const bypass = function (checkGroup, checkId, checkLabel) {
-  markbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
+  lintbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
 };
 
 const checkHasProperties = function (code, sels) {
@@ -212,14 +212,14 @@ const check = function (checkGroup, checkId, checkLabel, fileContents, hasSels, 
   let code = {};
   let allMessages;
 
-  markbotMain.send('check-group:item-computing', checkGroup, checkId);
+  lintbotMain.send('check-group:item-computing', checkGroup, checkId);
 
   try {
     code = css.parse(fileContents);
     allMessages = merge(checkHasProperties(code, hasSels), checkHasNotProperties(code, hasNotSels));
-    markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, allMessages.errors, allMessages.messages, allMessages.warnings);
+    lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, allMessages.errors, allMessages.messages, allMessages.warnings);
   } catch (e) {
-    if (e.reason && e.line) markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, [`Line ${e.line}: ${e.reason}`]);
+    if (e.reason && e.line) lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, [`Line ${e.line}: ${e.reason}`]);
   }
 
   next();
@@ -231,7 +231,7 @@ module.exports.init = function (group) {
     const checkLabel = 'Required properties';
     const checkId = 'properties';
 
-    markbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
+    lintbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
 
     return {
       check: function (fileContents, hasSels, hasNotSels, next) {

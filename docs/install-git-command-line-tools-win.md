@@ -1,8 +1,8 @@
 # Install the Git command-line tools on Windows
 
-*Markbot requires a few extra tools installed on your computer to function properly.*
+*Lintbot requires a few extra tools installed on your computer to function properly.*
 
-**The Git command-line tools allow Markbot to check your commits & push status, etc.**
+**The Git command-line tools allow Lintbot to check your commits & push status, etc.**
 
 **Go to [Git’s download page](https://git-scm.com/download/win) and download the Windows version.**
 

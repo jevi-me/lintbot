@@ -23,9 +23,9 @@ unclosed
 webpage
 webpages
 ##
-# Markbot specific
+# Lintbot specific
 ##
-markbot
+lintbot
 patternbot
 spritebot
 imageoptim

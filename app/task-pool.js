@@ -4,7 +4,7 @@ const path = require('path');
 const electron = require('electron');
 const BrowserWindow = electron.BrowserWindow;
 const ipcMain = electron.ipcMain;
-const markbotMain = require('./markbot-main');
+const lintbotMain = require('./lintbot-main');
 const taskPoolQueue = require('./task-pool-queue');
 const appPkg = require('../package.json');
 
@@ -47,7 +47,7 @@ const spawnTaskRunner = function () {
 
   bw.loadURL('file://' + path.resolve(__dirname + '/task-pool.html'));
 
-  if (markbotMain.isDebug()) {
+  if (lintbotMain.isDebug()) {
     bw.webContents.openDevTools({
       mode: 'detach',
     });
@@ -63,7 +63,7 @@ const executeTaskRunner = function (runner, task) {
 
   // All these variables are defined in `app/task-pool.html`
   let js = `
-    markbotTaskReset();
+    lintbotTaskReset();
 
     taskDetails = ${taskDetailsJson};
     taskRunnerId = ${runner.id};
@@ -73,7 +73,7 @@ const executeTaskRunner = function (runner, task) {
 
       alreadyDone = true;
 
-      require('electron').ipcRenderer.send('__markbot-taskpool-task-done', ${runner.id});
+      require('electron').ipcRenderer.send('__lintbot-taskpool-task-done', ${runner.id});
       console.log('COMPLETED: ${task.module} — ${task.groupLabel} — ${task.type} — ${task.priority}');
     };
 
@@ -159,7 +159,7 @@ const executeAvailableSingleTaskRunner = function () {
   let runner = availablePool.single.pop();
   let task = taskQueueSingle.next();
 
-  if (markbotMain.isDebug()) console.log(`Single process: ${runner.id} -- ${task.module}`);
+  if (lintbotMain.isDebug()) console.log(`Single process: ${runner.id} -- ${task.module}`);
 
   executingPool.single[runner.id] = runner;
   executeTaskRunner(executingPool.single[runner.id], task);
@@ -170,7 +170,7 @@ const executeAvailableStaticTaskRunners = function () {
     let runner = availablePool.static.pop();
     let task = taskQueueStatic.next();
 
-    if (markbotMain.isDebug()) console.log(`Process: ${runner.id} -- ${task.module}`);
+    if (lintbotMain.isDebug()) console.log(`Process: ${runner.id} -- ${task.module}`);
 
     executingPool.static[runner.id] = runner;
     executeTaskRunner(executingPool.static[runner.id], task);
@@ -182,7 +182,7 @@ const executeAvailableLiveTaskRunners = function () {
     let runner = availablePool.live.pop();
     let task = taskQueueLive.next();
 
-    if (markbotMain.isDebug()) console.log(`Process: ${runner.id} -- ${task.module}`);
+    if (lintbotMain.isDebug()) console.log(`Process: ${runner.id} -- ${task.module}`);
 
     executingPool.live[runner.id] = runner;
     executeTaskRunner(executingPool.live[runner.id], task);
@@ -247,7 +247,7 @@ const closeConsoleGroups = function () {
 const start = function (next) {
   nextCallback = next;
 
-  if (markbotMain.isDebug()) console.log('----- NEW RUN ------');
+  if (lintbotMain.isDebug()) console.log('----- NEW RUN ------');
 
   if (taskQueueSingle.has()) {
     spawnSingleTaskRunner();
@@ -280,7 +280,7 @@ const checkDoneAll = function () {
 };
 
 const doneSingle = function (id) {
-  if (markbotMain.isDebug()) console.log(`Done: ${id}`);
+  if (lintbotMain.isDebug()) console.log(`Done: ${id}`);
 
   if (executingPool.static[id]) {
     availablePool.static.push(executingPool.static[id]);
@@ -295,7 +295,7 @@ const doneSingle = function (id) {
 };
 
 const doneStatic = function (id) {
-  if (markbotMain.isDebug()) console.log(`Done: ${id}`);
+  if (lintbotMain.isDebug()) console.log(`Done: ${id}`);
 
   if (executingPool.static[id]) {
     availablePool.static.push(executingPool.static[id]);
@@ -305,13 +305,13 @@ const doneStatic = function (id) {
   if (taskQueueStatic.has()) executeAvailableStaticTaskRunners();
 
   if (!taskQueueStatic.has() && Object.keys(executingPool.static).length <= 0) {
-    // if (!markbotMain.isDebug()) destroyAllStaticTaskRunners();
+    // if (!lintbotMain.isDebug()) destroyAllStaticTaskRunners();
     checkDoneAll();
   }
 };
 
 const doneLive = function (id) {
-  if (markbotMain.isDebug()) console.log(`Done: ${id}`);
+  if (lintbotMain.isDebug()) console.log(`Done: ${id}`);
 
   if (executingPool.live[id]) {
     availablePool.live.push(executingPool.live[id]);
@@ -321,7 +321,7 @@ const doneLive = function (id) {
   if (taskQueueLive.has()) executeAvailableLiveTaskRunners();
 
   if (!taskQueueLive.has() && Object.keys(executingPool.live).length <= 0) {
-    // if (!markbotMain.isDebug()) destroyAllLiveTaskRunners();
+    // if (!lintbotMain.isDebug()) destroyAllLiveTaskRunners();
     checkDoneAll();
   }
 };
@@ -338,7 +338,7 @@ const stop = function () {
   destroyAllLiveTaskRunners();
 };
 
-ipcMain.on('__markbot-taskpool-task-done', function (e, id) {
+ipcMain.on('__lintbot-taskpool-task-done', function (e, id) {
   done(id);
 });
 

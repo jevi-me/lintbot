@@ -2,7 +2,7 @@
   'use strict';
 
   const https = require('https');
-  const markbotMain = require('electron').remote.require('./app/markbot-main');
+  const lintbotMain = require('electron').remote.require('./app/lintbot-main');
   const userAgentService = require(`${__dirname}/user-agent-service`);
 
   const group = taskDetails.group;
@@ -21,19 +21,19 @@
     }
   };
 
-  markbotMain.send('check-group:item-new', group, id, label);
-  markbotMain.send('check-group:item-computing', group, id, label);
+  lintbotMain.send('check-group:item-new', group, id, label);
+  lintbotMain.send('check-group:item-computing', group, id, label);
 
   https.get(opts, function (res) {
     if(res.statusCode >= 200 && res.statusCode <= 299) {
-      markbotMain.send('check-group:item-complete', group, id, label, false, [`**Your website is online!** Check it out in your browser or on your mobile device:  @@https://${username.toLowerCase()}.github.io/${repo}/@@`]);
+      lintbotMain.send('check-group:item-complete', group, id, label, false, [`**Your website is online!** Check it out in your browser or on your mobile device:  @@https://${username.toLowerCase()}.github.io/${repo}/@@`]);
     } else {
-      markbotMain.send('check-group:item-complete', group, id, label, errors);
+      lintbotMain.send('check-group:item-complete', group, id, label, errors);
     }
 
     done();
   }).on('error', function (e) {
-    markbotMain.send('check-group:item-complete', group, id, label, errors);
+    lintbotMain.send('check-group:item-complete', group, id, label, errors);
     done();
   });
 }());

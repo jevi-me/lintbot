@@ -1,15 +1,15 @@
 'use strict';
 
-module.exports.generateTaskList = function (markbotFile) {
+module.exports.generateTaskList = function (lintbotFile) {
   var tasks = [];
 
-  if (markbotFile.liveWebsite && markbotFile.repo) {
+  if (lintbotFile.liveWebsite && lintbotFile.repo) {
     let task = {
       group: `live-website-${Date.now()}`,
       groupLabel: 'Live website',
       options: {
-        repo: markbotFile.repo,
-        username: markbotFile.username,
+        repo: lintbotFile.repo,
+        username: lintbotFile.username,
       },
     };
 

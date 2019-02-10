@@ -5,7 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const yaml = require('js-yaml');
 const exists = require('./file-exists');
-const markbotMain = require('./markbot-main');
+const lintbotMain = require('./lintbot-main');
 
 const getHash = function () {
   return crypto.createHash('sha256');
@@ -19,7 +19,7 @@ const readLockFile = function (filePath) {
       tmpLocks = yaml.safeLoad(fs.readFileSync(filePath, 'utf8'));
     } catch (e) {
       let ln = (e.mark && e.mark.line) ? e.mark.line + 1 : '?';
-      markbotMain.debug(`Error in the MarkbotLockFile, line ${ln}: ${e.message}`);
+      lintbotMain.debug(`Error in the LintbotLockFile, line ${ln}: ${e.message}`);
     }
 
     if (!tmpLocks) tmpLocks = {};

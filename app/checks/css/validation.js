@@ -6,7 +6,7 @@ const exec = require('child_process').exec;
 const xmlParser = require('xml2js').parseString;
 const escapeShell = require(`${__dirname}/../../escape-shell`);
 const convertToUrl = require(`${__dirname}/../../convert-path-to-url`);
-const markbotMain = require('electron').remote.require('./app/markbot-main');
+const lintbotMain = require('electron').remote.require('./app/lintbot-main');
 
 const cssValidatorInvalidChars = ['#'];
 
@@ -71,7 +71,7 @@ const shouldIncludeError = function (context, message, skippedstring, line, line
 };
 
 const bypass = function (checkGroup, checkId, checkLabel) {
-  markbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
+  lintbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
 };
 
 const check = function (checkGroup, checkId, checkLabel, fullPath, fileContents, lines, next) {
@@ -79,13 +79,13 @@ const check = function (checkGroup, checkId, checkLabel, fullPath, fileContents,
   const execPath = 'java -jar ' + escapeShell(validatorPath + '/css-validator.jar') + ' --output=soap12 --profile=css3svg ' + escapeShell('file://' + convertToUrl(fullPath));
   let errors = [];
 
-  markbotMain.send('check-group:item-computing', checkGroup, checkId);
-  markbotMain.debug(`@@${validatorPath}@@`);
-  markbotMain.debug(`\`${execPath}\``);
+  lintbotMain.send('check-group:item-computing', checkGroup, checkId);
+  lintbotMain.debug(`@@${validatorPath}@@`);
+  lintbotMain.debug(`\`${execPath}\``);
 
   if ((new RegExp(`[${cssValidatorInvalidChars.join('')}]`)).test(fullPath)) {
     errors = [`The CSS file, found at this location: \`${fullPath}\`, cannot be validated because the CSS validator doesn’t allow the following characters in file & folder names: \`${cssValidatorInvalidChars.join('\`, \`')}\``];
-    markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
+    lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
     return next(errors);
   }
 
@@ -99,7 +99,7 @@ const check = function (checkGroup, checkId, checkLabel, fullPath, fileContents,
 
       if (!result) {
         errors.push('There was a problem with the CSS validator — please try again');
-        markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
+        lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
         return next(errors);
       }
 
@@ -135,7 +135,7 @@ const check = function (checkGroup, checkId, checkLabel, fullPath, fileContents,
         });
       }
 
-      markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
+      lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
       next(errors);
     });
   });
@@ -147,7 +147,7 @@ module.exports.init = function (group) {
     const checkId = 'validation';
     const checkLabel = 'Validation';
 
-    markbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
+    lintbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
 
     return {
       check: function (fullPath, fileContents, lines, next) {

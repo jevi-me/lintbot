@@ -3,5 +3,5 @@
 const pkg = require('../package');
 
 module.exports.get = function () {
-  return `Markbot/${pkg.version} (+https://github.com/thomasjbradley/markbot)`;
+  return `Lintbot/${pkg.version} (+https://github.com/jevi-me/lintbot)`;
 };

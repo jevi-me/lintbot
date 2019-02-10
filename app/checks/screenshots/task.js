@@ -13,7 +13,7 @@
   const BrowserWindow = require('electron').remote.BrowserWindow;
   const ipcRenderer = require('electron').ipcRenderer;
   const nativeImage = require('electron').nativeImage;
-  const markbotMain = require('electron').remote.require('./app/markbot-main');
+  const lintbotMain = require('electron').remote.require('./app/lintbot-main');
   const fileExists = require(__dirname + '/file-exists');
   const webLoader = require(__dirname + '/web-loader');
   const classify = require(__dirname + '/classify');
@@ -110,13 +110,13 @@
             differ = null;
             break;
           case 'debug':
-            markbotMain.debug(message.debug.join(' '));
+            lintbotMain.debug(message.debug.join(' '));
             break;
           default:
             if (message.messages) {
-              markbotMain.send(message.id, group, message.checkId, message.checkLabel, false, message.messages);
+              lintbotMain.send(message.id, group, message.checkId, message.checkLabel, false, message.messages);
             } else {
-              markbotMain.send(message.id, group, message.checkId, message.checkLabel, message.errors);
+              lintbotMain.send(message.id, group, message.checkId, message.checkLabel, message.errors);
             }
             next(filename, width);
             break;
@@ -145,7 +145,7 @@
     const idExtra = (file.label) ? `-${file.label}` : '';
     const labelExtra = (file.label) ? ` — ${file.label}` : '';
     const ipcListenerLabel = classify(`${file.path}-${Date.now()}`);
-    const ipcListenerResizeChannel = `__markbot-screenshots-resized-${ipcListenerLabel}`;
+    const ipcListenerResizeChannel = `__lintbot-screenshots-resized-${ipcListenerLabel}`;
     const screenshotFilename = screenshotNamingService.makeScreenshotBasename(file);
     let screenshotSizes = (Array.isArray(file.sizes)) ? file.sizes.slice(0) : Object.keys(file.sizes);
     let screenshotSizesDiffing = [];
@@ -182,7 +182,7 @@
       }
 
       if (nextSize) {
-        markbotMain.send('check-group:item-computing', group, listenerId(nextSize), listenerLabel(nextSize));
+        lintbotMain.send('check-group:item-computing', group, listenerId(nextSize), listenerLabel(nextSize));
 
         if (nextSize === 'print') {
           handleResizedBrowserWindow(windowId, 'print', MAX_WINDOW_HEIGHT);
@@ -197,7 +197,7 @@
 
     const failAllScreenshots = function (reason) {
       screenshotSizes.forEach((width) => {
-        markbotMain.send('check-group:item-complete', group, listenerId(width), listenerLabel(width), [`The website isn’t functioning as expected: ${reason}`]);
+        lintbotMain.send('check-group:item-complete', group, listenerId(width), listenerLabel(width), [`The website isn’t functioning as expected: ${reason}`]);
       });
     };
 
@@ -210,10 +210,10 @@
       let win = BrowserWindow.fromId(windowId);
 
       ipcRenderer.removeAllListeners(ipcListenerResizeChannel);
-      ipcRenderer.removeAllListeners('__markbot-functionality-error');
-      ipcRenderer.removeAllListeners('__markbot-functionality-test-done-' + ipcListenerLabel);
-      ipcRenderer.removeAllListeners('__markbot-functionality-test-fail-' + ipcListenerLabel);
-      ipcRenderer.removeAllListeners('__markbot-functionality-test-debug-' + ipcListenerLabel);
+      ipcRenderer.removeAllListeners('__lintbot-functionality-error');
+      ipcRenderer.removeAllListeners('__lintbot-functionality-test-done-' + ipcListenerLabel);
+      ipcRenderer.removeAllListeners('__lintbot-functionality-test-fail-' + ipcListenerLabel);
+      ipcRenderer.removeAllListeners('__lintbot-functionality-test-debug-' + ipcListenerLabel);
 
       webLoader.destroy(win);
       win = null;
@@ -234,7 +234,7 @@
               checkAllDiffsDone();
             });
           } else {
-            markbotMain.send('check-group:item-complete', group, listenerId(width), listenerLabel(width), [`Reference screenshot not found in the “${screenshotNamingService.REFERENCE_SCREENSHOT_FOLDER}” folder`]);
+            lintbotMain.send('check-group:item-complete', group, listenerId(width), listenerLabel(width), [`Reference screenshot not found in the “${screenshotNamingService.REFERENCE_SCREENSHOT_FOLDER}” folder`]);
             next();
           }
 
@@ -253,42 +253,42 @@
       handleResizedBrowserWindow(windowId, width, height);
     });
 
-    ipcRenderer.on('__markbot-functionality-error', function (event, message, line, filename) {
+    ipcRenderer.on('__lintbot-functionality-error', function (event, message, line, filename) {
       filename = filename.replace(fullPath, '').replace('file:///', '');
       cleanup(windowId);
 
       if (message) message = message.replace(/\.$/, '');
       if (filename) filename = filename.replace(/https?:\/\/(localhost|127\.0\.0\.1):?\d+\//, '');
 
-      if (message && !filename && !line) markbotMain.debug(message);
-      if (message && filename && !line) markbotMain.debug(`${message} — \`${filename}\``);
-      if (message && filename && line) markbotMain.debug(`${message} — \`${filename}\` on line ${line}`);
+      if (message && !filename && !line) lintbotMain.debug(message);
+      if (message && filename && !line) lintbotMain.debug(`${message} — \`${filename}\``);
+      if (message && filename && line) lintbotMain.debug(`${message} — \`${filename}\` on line ${line}`);
     });
 
-    ipcRenderer.on('__markbot-functionality-test-done-' + ipcListenerLabel, function(event, windowId) {
+    ipcRenderer.on('__lintbot-functionality-test-done-' + ipcListenerLabel, function(event, windowId) {
       nextScreenshot(windowId);
     });
 
-    ipcRenderer.on('__markbot-functionality-test-fail-' + ipcListenerLabel, function(event, reason, windowId) {
+    ipcRenderer.on('__lintbot-functionality-test-fail-' + ipcListenerLabel, function(event, reason, windowId) {
       cleanup(windowId);
       failAllScreenshots(reason);
       next();
     });
 
-    ipcRenderer.on('__markbot-functionality-test-debug-' + ipcListenerLabel, function (event, ...e) {
-      markbotMain.debug(...e);
+    ipcRenderer.on('__lintbot-functionality-test-debug-' + ipcListenerLabel, function (event, ...e) {
+      lintbotMain.debug(...e);
     });
 
     if (!fileExists.check(pagePath)) {
       screenshotSizes.forEach(function (size) {
-        markbotMain.send('check-group:item-new', group, listenerId(size), listenerLabel(size));
-        markbotMain.send('check-group:item-complete', group, listenerId(size), listenerLabel(size), [`Screenshots couldn’t be captured — \`${file.path}\` is missing or misspelled`]);
+        lintbotMain.send('check-group:item-new', group, listenerId(size), listenerLabel(size));
+        lintbotMain.send('check-group:item-complete', group, listenerId(size), listenerLabel(size), [`Screenshots couldn’t be captured — \`${file.path}\` is missing or misspelled`]);
         next();
       });
       return;
     } else {
       screenshotSizes.forEach(function (size) {
-        markbotMain.send('check-group:item-new', group, listenerId(size), listenerLabel(size));
+        lintbotMain.send('check-group:item-new', group, listenerId(size), listenerLabel(size));
       });
     }
 
@@ -299,7 +299,7 @@
         if (file.before) {
           functionalityInjector.runCode(theWindow, file.before, 0, ipcListenerLabel);
         } else {
-          if (file.allowAnimations) theWindow.webContents.executeJavaScript(`window.__markbot.playAnimations();`);
+          if (file.allowAnimations) theWindow.webContents.executeJavaScript(`window.__lintbot.playAnimations();`);
           nextScreenshot(windowId);
         }
       });

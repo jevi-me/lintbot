@@ -4,10 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const exists = require('./file-exists');
 
-const MARKBOT_IGNORE_FILE = '.markbotignore';
+const LINTBOT_IGNORE_FILE = '.lintbotignore';
 
 const parse = function (fullPath, next) {
-  const ignoreFilePath = path.resolve(`${fullPath}/${MARKBOT_IGNORE_FILE}`);
+  const ignoreFilePath = path.resolve(`${fullPath}/${LINTBOT_IGNORE_FILE}`);
 
   if (!exists.check(ignoreFilePath)) return next([]);
 

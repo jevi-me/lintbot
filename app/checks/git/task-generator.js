@@ -2,22 +2,22 @@
 
 let config = require(__dirname + '/../../../config.json');
 
-module.exports.generateTaskList = function (markbotFile) {
+module.exports.generateTaskList = function (lintbotFile) {
   var tasks = [];
 
-  if (markbotFile.commits || markbotFile.git) {
+  if (lintbotFile.commits || lintbotFile.git) {
     let task = {
       group: `git-${Date.now()}`,
       groupLabel: 'Git & GitHub',
       options: {},
     };
 
-    if (!markbotFile.git && markbotFile.commits) {
+    if (!lintbotFile.git && lintbotFile.commits) {
       task.options = {
-        numCommits: markbotFile.commits,
+        numCommits: lintbotFile.commits,
       };
     } else {
-      task.options = markbotFile.git;
+      task.options = lintbotFile.git;
     }
 
     task.options.ignoreCommitEmails = config.ignoreCommitEmails;

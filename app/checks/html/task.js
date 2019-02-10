@@ -3,7 +3,7 @@
 
   const fs = require('fs');
   const path = require('path');
-  const markbotMain = require('electron').remote.require('./app/markbot-main');
+  const lintbotMain = require('electron').remote.require('./app/lintbot-main');
   const exists = require(`${__dirname}/file-exists`);
   const validation = require(`${__dirname}/checks/html/validation`);
   const bestPractices = require(`${__dirname}/checks/html/best-practices`);
@@ -59,16 +59,16 @@
     };
 
     checksToComplete++;
-    markbotMain.send('check-group:item-new', group, 'exists', 'Exists');
+    lintbotMain.send('check-group:item-new', group, 'exists', 'Exists');
 
     if (file.locked) {
       checksToComplete++;
-      markbotMain.send('check-group:item-new', group, 'unchanged', 'Unchanged');
+      lintbotMain.send('check-group:item-new', group, 'unchanged', 'Unchanged');
 
       if (isCheater) {
-        markbotMain.send('check-group:item-complete', group, 'unchanged', 'Unchanged', [`The \`${file.path}\` should not be changed`]);
+        lintbotMain.send('check-group:item-complete', group, 'unchanged', 'Unchanged', [`The \`${file.path}\` should not be changed`]);
       } else {
-        markbotMain.send('check-group:item-complete', group, 'unchanged', 'Unchanged');
+        lintbotMain.send('check-group:item-complete', group, 'unchanged', 'Unchanged');
       }
 
       checkIfDone();
@@ -105,7 +105,7 @@
     }
 
     if (!exists.check(fullPath)) {
-      markbotMain.send('check-group:item-complete', group, 'exists', 'Exists', [`The file \`${file.path}\` is missing or misspelled`]);
+      lintbotMain.send('check-group:item-complete', group, 'exists', 'Exists', [`The file \`${file.path}\` is missing or misspelled`]);
       bypassAllChecks(file);
       checkIfDone();
       return;
@@ -115,13 +115,13 @@
       var lines;
 
       if (fileContents.trim() == '') {
-        markbotMain.send('check-group:item-complete', group, 'exists', 'Exists', [`The file \`${file.path}\` is empty`]);
+        lintbotMain.send('check-group:item-complete', group, 'exists', 'Exists', [`The file \`${file.path}\` is empty`]);
         bypassAllChecks(file);
         checkIfDone();
         return;
       }
 
-      markbotMain.send('check-group:item-complete', group, 'exists', 'Exists');
+      lintbotMain.send('check-group:item-complete', group, 'exists', 'Exists');
       checkIfDone();
 
       if (file.locked) return;
@@ -130,12 +130,12 @@
 
       if (file.maxLines) {
         checksToComplete++;
-        markbotMain.send('check-group:item-new', group, 'lines', '№ lines');
+        lintbotMain.send('check-group:item-new', group, 'lines', '№ lines');
 
         if (lines.length > file.maxLines) {
-          markbotMain.send('check-group:item-complete', group, 'lines', '№ lines', [`There are more lines of code in \`${file.path}\` than expected (has ${lines.length}, expecting <= ${file.maxLines})`]);
+          lintbotMain.send('check-group:item-complete', group, 'lines', '№ lines', [`There are more lines of code in \`${file.path}\` than expected (has ${lines.length}, expecting <= ${file.maxLines})`]);
         } else {
-          markbotMain.send('check-group:item-complete', group, 'lines', '№ lines');
+          lintbotMain.send('check-group:item-complete', group, 'lines', '№ lines');
         }
       }
 

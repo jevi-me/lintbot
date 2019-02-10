@@ -5,7 +5,7 @@ const cheerio = require('cheerio');
 const parse5 = require('parse5');
 const htmlparser2Adapter = require('parse5-htmlparser2-tree-adapter');
 const merge = require('merge-objects');
-const markbotMain = require('electron').remote.require('./app/markbot-main');
+const lintbotMain = require('electron').remote.require('./app/lintbot-main');
 const messageGroup = require(`${__dirname}/../message-group`);
 
 const convertToCheckObject = function (sel, defaultMessage) {
@@ -56,7 +56,7 @@ const convertToHasNotObject = function (sel) {
 };
 
 const bypass = function (checkGroup, checkId, checkLabel) {
-  markbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
+  lintbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
 };
 
 const checkHasElements = function (code, sels) {
@@ -102,7 +102,7 @@ const checkHasNotElements = function (code, sels) {
         allMessages = messageGroup.bind(check, allMessages);
       }
     } catch (e) {
-      markbotMain.debug(`Line ${e.lineNumber}: ${e.message}`);
+      lintbotMain.debug(`Line ${e.lineNumber}: ${e.message}`);
       allMessages = messageGroup.bind(check, allMessages);
     }
   });
@@ -118,12 +118,12 @@ const check = function (checkGroup, checkId, checkLabel, fileContents, hasSels, 
     sourceCodeLocationInfo: true,
   });
 
-  markbotMain.send('check-group:item-computing', checkGroup, checkId);
+  lintbotMain.send('check-group:item-computing', checkGroup, checkId);
 
   code = cheerio.load(parsedHtml.children);
   allMessages = merge(checkHasElements(code, hasSels), checkHasNotElements(code, hasNotSels));
 
-  markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, allMessages.errors, allMessages.messages, allMessages.warnings);
+  lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, allMessages.errors, allMessages.messages, allMessages.warnings);
   next();
 };
 
@@ -133,7 +133,7 @@ module.exports.init = function (group) {
     const checkLabel = 'Required elements';
     const checkId = 'elements';
 
-    markbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
+    lintbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
 
     return {
       check: function (fileContents, hasSels, hasNotSels, next) {

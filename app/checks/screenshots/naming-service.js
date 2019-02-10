@@ -4,7 +4,7 @@ const path = require('path');
 const is = require('electron-is');
 const classify = require(__dirname + '/../../classify');
 
-const SCREENSHOT_PREFIX = 'markbot';
+const SCREENSHOT_PREFIX = 'lintbot';
 const REFERENCE_SCREENSHOT_FOLDER = 'screenshots';
 
 let app;

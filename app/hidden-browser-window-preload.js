@@ -1,19 +1,19 @@
 /*!
  * =============================================================================
- * Internal abilities required for Markbot to function
+ * Internal abilities required for Lintbot to function
  * Isolates all the Node.js functionality away from the user scripts for security
  * =============================================================================
  */
-window.__markbot = (function () {
+window.__lintbot = (function () {
   'use strict';
 
   let fontsLoadedInterval;
   let animationPauseStyleTag;
 
   const getCurrentTaskWindowId = () => {
-    if (window.__markbotHiddenTestingWindowId) return window.__markbotHiddenTestingWindowId;
+    if (window.__lintbotHiddenTestingWindowId) return window.__lintbotHiddenTestingWindowId;
 
-    return document.referrer.replace(/^https:\/\//, '').replace(/\.running-task-windows\.markbot\.web\-dev\.tools\/$/, '');
+    return document.referrer.replace(/^https:\/\//, '').replace(/\.running-task-windows\.lintbot\.web\-dev\.tools\/$/, '');
   };
 
   const sendMessageToWindow = function (windowId, messageId, ...message) {
@@ -51,7 +51,7 @@ window.__markbot = (function () {
             window.requestAnimationFrame(() => {
               process.nextTick(() => {
                 setTimeout(() => {
-                  sendMessageToWindow(getCurrentTaskWindowId(), '__markbot-hidden-browser-window-fonts-loaded', {location: window.location.href});
+                  sendMessageToWindow(getCurrentTaskWindowId(), '__lintbot-hidden-browser-window-fonts-loaded', {location: window.location.href});
                 }, 100);
               });
             });
@@ -63,7 +63,7 @@ window.__markbot = (function () {
 
   const pauseAnimations = function () {
     animationPauseStyleTag = document.createElement('style');
-    animationPauseStyleTag.id = '__markbot-style-chunk-animation-pause';
+    animationPauseStyleTag.id = '__lintbot-style-chunk-animation-pause';
     animationPauseStyleTag.textContent = `
       *, *::before, *::after {
         animation-play-state: paused !important;
@@ -91,11 +91,11 @@ window.__markbot = (function () {
 
 /*!
  * =============================================================================
- * Document & window event catchers for events Markbot needs to know about
+ * Document & window event catchers for events Lintbot needs to know about
  * =============================================================================
  */
 window.addEventListener('error', (err) => {
-  window.__markbot.sendMessageToWindow(window.__markbot.getCurrentTaskWindowId(), '__markbot-functionality-error', err.message, err.lineno, err.filename);
+  window.__lintbot.sendMessageToWindow(window.__lintbot.getCurrentTaskWindowId(), '__lintbot-functionality-error', err.message, err.lineno, err.filename);
 });
 
 window.addEventListener('load', (ev) => {
@@ -104,7 +104,7 @@ window.addEventListener('load', (ev) => {
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => {
           process.nextTick(() => {
-            window.__markbot.sendMessageToWindow(window.__markbot.getCurrentTaskWindowId(), '__markbot-hidden-browser-window-loaded', {location: window.location.href});
+            window.__lintbot.sendMessageToWindow(window.__lintbot.getCurrentTaskWindowId(), '__lintbot-hidden-browser-window-loaded', {location: window.location.href});
           });
         });
       });
@@ -119,7 +119,7 @@ window.addEventListener('load', (ev) => {
  * =============================================================================
  */
 document.addEventListener('DOMContentLoaded', (ev) => {
-  window.__markbot.pauseAnimations();
+  window.__lintbot.pauseAnimations();
 });
 
 /*!

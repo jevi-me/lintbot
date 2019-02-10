@@ -4,14 +4,14 @@ const util = require('util');
 const parse5 = require('parse5');
 const htmlparser2Adapter = require('parse5-htmlparser2-tree-adapter');
 const cheerio = require('cheerio');
-const markbotMain = require('electron').remote.require('./app/markbot-main');
+const lintbotMain = require('electron').remote.require('./app/lintbot-main');
 
 const getLevel = function (elem) {
   return parseInt(elem.name.slice(1), 10);
 }
 
 const bypass = function (checkGroup, checkId, checkLabel) {
-  markbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
+  lintbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
 };
 
 const check = function (checkGroup, checkId, checkLabel, fileContents, next) {
@@ -27,18 +27,18 @@ const check = function (checkGroup, checkId, checkLabel, fileContents, next) {
     sourceCodeLocationInfo: true,
   });
 
-  markbotMain.send('check-group:item-computing', checkGroup, checkId);
+  lintbotMain.send('check-group:item-computing', checkGroup, checkId);
 
   code = cheerio.load(parsedHtml.children);
   headings = code('h1, h2, h3, h4, h5, h6');
 
   if (headings.length <= 0) {
-    markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, ['There are no headings in the document — there should be at least an `<h1>`']);
+    lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, ['There are no headings in the document — there should be at least an `<h1>`']);
     return next();
   }
 
   if (getLevel(headings[0]) != 1) {
-    markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, [`Line ${headings[0].sourceCodeLocation.startLine}: The first heading in the document is an \`<h${getLevel(headings[0])}>\` — but documents must start with an \`<h1>\``]);
+    lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, [`Line ${headings[0].sourceCodeLocation.startLine}: The first heading in the document is an \`<h${getLevel(headings[0])}>\` — but documents must start with an \`<h1>\``]);
     return next();
   }
 
@@ -89,7 +89,7 @@ const check = function (checkGroup, checkId, checkLabel, fileContents, next) {
     });
   }
 
-  markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors, messages);
+  lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors, messages);
   next();
 };
 
@@ -99,7 +99,7 @@ module.exports.init = function (group) {
     const checkLabel = 'Heading structure';
     const checkId = 'outline';
 
-    markbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
+    lintbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
 
     return {
       check: function (fileContents, next) {

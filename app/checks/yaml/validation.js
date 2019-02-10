@@ -4,10 +4,10 @@ const path = require('path');
 const util = require('util');
 const yaml = require('js-yaml');
 const S = require('string');
-const markbotMain = require('electron').remote.require('./app/markbot-main');
+const lintbotMain = require('electron').remote.require('./app/lintbot-main');
 
 const bypass = function (checkGroup, checkId, checkLabel) {
-  markbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
+  lintbotMain.send('check-group:item-bypass', checkGroup, checkId, checkLabel, ['Skipped because of previous errors']);
 };
 
 const check = function (checkGroup, checkId, checkLabel, fullPath, fileContents, next) {
@@ -15,7 +15,7 @@ const check = function (checkGroup, checkId, checkLabel, fullPath, fileContents,
   let yamlData;
   let errors = [];
 
-  markbotMain.send('check-group:item-computing', checkGroup, checkId);
+  lintbotMain.send('check-group:item-computing', checkGroup, checkId);
 
   try {
     yamlData = yaml.safeLoad(fileContents);
@@ -36,12 +36,12 @@ const check = function (checkGroup, checkId, checkLabel, fullPath, fileContents,
     errors.unshift({
       type: 'intro',
       message: 'Refer to the Markdown & YAML cheat sheet to help understand these errors:',
-      link: 'https://learn-the-web.algonquindesign.ca/topics/markdown-yaml-cheat-sheet/',
+      link: 'https://learn-the-web.algonquindesign.ca/topics/markdown-yaml-cheat-sheet/', //TODO: Fix link to algonquindesign
       linkText: 'https://mkbt.io/md-yml-cheat-sheet/',
     });
   }
 
-  markbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
+  lintbotMain.send('check-group:item-complete', checkGroup, checkId, checkLabel, errors);
   next(errors);
 };
 
@@ -51,7 +51,7 @@ module.exports.init = function (group) {
     const checkId = 'validation';
     const checkLabel = 'Validation & best practices';
 
-    markbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
+    lintbotMain.send('check-group:item-new', checkGroup, checkId, checkLabel);
 
     return {
       check: function (fullPath, fileContents, next) {

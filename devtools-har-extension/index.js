@@ -6,9 +6,9 @@ chrome.devtools.network.onRequestFinished.addListener(function (request) {
       har.entries = har.entries.filter(function (e) {
         return e.request.url !== LOAD_INDICATOR;
       });
-      chrome.devtools.inspectedWindow.eval(`window.__markbot.sendMessageToWindow(window.__markbot.getCurrentTaskWindowId(), "__markbot-hidden-browser-har-generation-succeeded", ${JSON.stringify({log:har})});`);
+      chrome.devtools.inspectedWindow.eval(`window.__lintbot.sendMessageToWindow(window.__lintbot.getCurrentTaskWindowId(), "__lintbot-hidden-browser-har-generation-succeeded", ${JSON.stringify({log:har})});`);
     });
   }
 });
 
-chrome.devtools.inspectedWindow.eval('window.__markbot.sendMessageToWindow(window.__markbot.getCurrentTaskWindowId(), "__markbot-hidden-browser-devtools-loaded");');
+chrome.devtools.inspectedWindow.eval('window.__lintbot.sendMessageToWindow(window.__lintbot.getCurrentTaskWindowId(), "__lintbot-hidden-browser-devtools-loaded");');

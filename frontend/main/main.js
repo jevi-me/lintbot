@@ -4,13 +4,15 @@ const os = require('os');
 const fs = require('fs');
 const electron = require('electron');
 const shell = electron.shell;
-const markbot = electron.remote.require('./markbot');
+const lintbot = electron.remote.require('./lintbot');
 const listener = electron.ipcRenderer;
 const timeEstimator = require('./time-estimator');
 const config = require('../../config.json');
 const classify = require('../../app/classify');
 const successMessages = require('./success-messages.json');
 const robotBeeps = require('./robot-beeps.json');
+
+/*-- HTML elements --*/
 const $body = document.querySelector('body');
 const $dropbox = document.getElementById('dropbox');
 const $loader = document.getElementById('app-loader');
@@ -27,28 +29,29 @@ const $messagesLoaderLabel = document.querySelector('.messages-loader-label');
 const $messageHeader = document.getElementById('message-header');
 const $robotLogo = document.querySelector('.robot-logo');
 const $messageHeading = document.querySelector('h2.no-errors');
-const $signin = document.getElementById('sign-in');
-const $submit = document.getElementById('submit');
-const $allGoodCheck = document.getElementById('all-good-check');
-const $statsStart = document.getElementById('stats-start');
-const $statsEnd = document.getElementById('stats-end');
-const $statsTime = document.getElementById('stats-time');
-const $statsCommits = document.getElementById('stats-commits');
-const $messageCanvas = document.querySelector('.success-fail-message.with-canvas');
-const $messageNoCanvas = document.querySelector('.success-fail-message.no-canvas');
+//const $signin = document.getElementById('sign-in');
+//const $submit = document.getElementById('submit');
+//const $allGoodCheck = document.getElementById('all-good-check');
+//const $statsStart = document.getElementById('stats-start');
+//const $statsEnd = document.getElementById('stats-end');
+//const $statsTime = document.getElementById('stats-time');
+//const $statsCommits = document.getElementById('stats-commits');
+//const $messageCanvas = document.querySelector('.success-fail-message.with-canvas');
+//const $messageNoCanvas = document.querySelector('.success-fail-message.no-canvas');
 
-// TOOLBAR
+/*-- TOOLBAR --*/
 const $toolbar = document.getElementById('toolbar');
-const $openProgressBtn = document.getElementById('open-progress');
+const $openCoursewebsiteBtn = document.getElementById('open-courseweb');
 const $openEditorBtn = document.getElementById('open-editor');
 const $openBrowserBtn = document.getElementById('open-browser');
-const $openRepoBtn = document.getElementById('open-repo');
-const $createIssueBtn = document.getElementById('create-issue');
+//const $openRepoBtn = document.getElementById('open-repo');
+//const $createIssueBtn = document.getElementById('create-issue');
 const $statusBar = document.getElementById('status-bar');
 const $refreshBtn = document.getElementById('refresh-btn');
 const $repoName = document.getElementById('folder');
-const $canvasBtn = document.getElementById('submit-btn');
-const $canvasBtnText = $canvasBtn.querySelector('#button-text');
+const $reportsBtn = document.getElementById('reports-btn');
+//const $canvasBtn = document.getElementById('submit-btn');
+//const $canvasBtnText = $canvasBtn.querySelector('#button-text');
 const $statusBarRed = document.getElementById('status-bar-red');
 const $statusBarYellow = document.getElementById('status-bar-yellow');
 const $statusBarGreen = document.getElementById('status-bar-green');
@@ -59,7 +62,7 @@ const $statusBarGreenText = $statusBarGreen.querySelector('.toolbar-status-text'
 let groups = {};
 let checks = {};
 let fullPath = false;
-let isMarkbotDoneYet;
+let isLintbotDoneYet;
 
 const dateFormatter = new Intl.DateTimeFormat('en-CA', {
   year: 'numeric',
@@ -80,20 +83,10 @@ const ERROR_MESSAGE_TYPE = {
 
 const appReady = function () {
   if (!sessionStorage.appIsReady) return false;
-
   $loader.dataset.state = 'hidden';
   $dependencies.dataset.state = 'hidden';
-
-  if (localStorage.getItem('github-username') && localStorage.getItem('progressinator-api-token')) {
-    $signin.dataset.state = 'hidden';
-    $dropbox.dataset.state = 'visible';
-    markbot.enableSignOut(localStorage.getItem('github-username'));
-    $openProgressBtn.removeAttribute('disabled');
-  } else {
-    $signin.dataset.state = 'visible';
-    $dropbox.dataset.state = 'hidden';
-    $openProgressBtn.setAttribute('disabled', true);
-  }
+  $dropbox.dataset.state = 'visible';
+  $openCoursewebsiteBtn.removeAttribute('disabled');
 };
 
 
@@ -137,10 +130,10 @@ const displayAlert = function (msg, opts) {
     enableToolbar();
   };
 
-  const handleRestartClick = function (e) {
-    e.preventDefault();
-    markbot.relaunch();
-  };
+    const handleRestartClick = function (e) {
+        e.preventDefault();
+        lintbot.relaunch();
+    };
 
   const handleButtonBlur = function (e) {
     alertBox.focus();
@@ -224,7 +217,7 @@ const buildCodeDiffErrorMessage = function (err, li) {
 };
 
 const displayDiffWindow = function (imgs, width) {
-  markbot.showDifferWindow(imgs, width);
+    lintbot.showDifferWindow(imgs, width);
 };
 
 const buildImageDiffErrorMessage = function (err, li) {
@@ -571,50 +564,56 @@ const displayErrors = function (group, label, linkId, errors, messages, warnings
 };
 
 const reset = function () {
-  clearInterval(isMarkbotDoneYet);
-  $messages.innerHTML = '';
-  $messagesPositive.innerHTML = '';
-  $messagesWarning.innerHTML = '';
-  $checks.innerHTML = '';
-  $checksLoader.dataset.state = 'visible';
-  $messagesLoader.dataset.state = 'visible';
-  $messagesLoaderLabel.innerHTML = robotBeeps[Math.floor(Math.random() * robotBeeps.length)] + '…';
-  $messages.dataset.state = 'hidden';
-  $messagesPositive.dataset.state = 'hidden';
-  $messagesWarning.dataset.state = 'hidden';
-  $messageHeader.dataset.state = 'computing';
-  $robotLogo.setAttribute('aria-label', 'Computing…');
-  $submit.dataset.state = 'hidden';
-  $allGoodCheck.dataset.state = '';
-  $statsStart.dataset.state = '';
-  $statsEnd.dataset.state = '';
-  $statsTime.dataset.state = '';
-  $statsCommits.dataset.state = '';
-  $messageNoCanvas.removeAttribute('hidden');
-  $messageCanvas.setAttribute('hidden', true);
-  [].map.call(document.querySelectorAll('.success-fail-message-warning'), (elem) => elem.setAttribute('hidden', true));
+    clearInterval(isLintbotDoneYet);
+    $messages.innerHTML = '';
+    $messagesPositive.innerHTML = '';
+    $messagesWarning.innerHTML = '';
+    $checks.innerHTML = '';
+    $checksLoader.dataset.state = 'visible';
+    $messagesLoader.dataset.state = 'visible';
+    $messagesLoaderLabel.innerHTML = robotBeeps[Math.floor(Math.random() * robotBeeps.length)] + '…';
+    $messages.dataset.state = 'hidden';
+    $messagesPositive.dataset.state = 'hidden';
+    $messagesWarning.dataset.state = 'hidden';
+    $messageHeader.dataset.state = 'computing';
+    $robotLogo.setAttribute('aria-label', 'Computing…');
+    //$submit.dataset.state = 'hidden';
+    //$allGoodCheck.dataset.state = '';
+    //$statsStart.dataset.state = '';
+    //$statsEnd.dataset.state = '';
+    //$statsTime.dataset.state = '';
+    //$statsCommits.dataset.state = '';
+    //$messageNoCanvas.removeAttribute('hidden');
+    //$messageCanvas.setAttribute('hidden', true);
+    //[].map.call(document.querySelectorAll('.success-fail-message-warning'), (elem) => elem.setAttribute('hidden', true));
 
-  $canvasBtn.dataset.state = '';
-  $canvasBtn.setAttribute('disabled', true);
-  $canvasBtnText.innerHTML = 'Submit';
-  $canvasBtn.dataset.canSubmit = false;
-  $canvasBtn.setAttribute('tabindex', -1);
-  markbot.disableSubmitAssignment();
+    //$canvasBtn.dataset.state = '';
+    //$canvasBtn.setAttribute('disabled', true);
+    //$canvasBtnText.innerHTML = 'Submit';
+    //$canvasBtn.dataset.canSubmit = false;
+    //$canvasBtn.setAttribute('tabindex', -1);
+    //lintbot.disableSubmitAssignment();
 
-  $dropbox.dataset.state = 'visible';
-  $messagesWrapper.dataset.state = 'hidden';
-  $checksWrapper.dataset.state = 'hidden';
-  $statusBar.setAttribute('disabled', true);
-  $refreshBtn.setAttribute('disabled', true);
-  $refreshBtn.setAttribute('aria-label', 'Refresh');
-  $refreshBtn.setAttribute('title', 'Refresh');
-  $refreshBtn.setAttribute('data-state', '');
-  $openEditorBtn.setAttribute('disabled', true);
-  $openBrowserBtn.setAttribute('disabled', true);
-  $openRepoBtn.setAttribute('disabled', true);
-  $createIssueBtn.setAttribute('disabled', true);
-  $repoName.querySelector('.icon-label').innerHTML = '—';
-  $repoName.setAttribute('disabled', true);
+    $reportsBtn.dataset.state = '';
+    $reportsBtn.setAttribute('disabled', true);
+    $reportsBtn.setAttribute('tabindex', -1);
+    $reportsBtn.dataset.canSubmit = 'true';
+
+
+    $dropbox.dataset.state = 'visible';
+    $messagesWrapper.dataset.state = 'hidden';
+    $checksWrapper.dataset.state = 'hidden';
+    $statusBar.setAttribute('disabled', true);
+    $refreshBtn.setAttribute('disabled', true);
+    $refreshBtn.setAttribute('aria-label', 'Refresh');
+    $refreshBtn.setAttribute('title', 'Refresh');
+    $refreshBtn.setAttribute('data-state', '');
+    $openEditorBtn.setAttribute('disabled', true);
+    $openBrowserBtn.setAttribute('disabled', true);
+    //$openRepoBtn.setAttribute('disabled', true);
+    //$createIssueBtn.setAttribute('disabled', true);
+    $repoName.querySelector('.icon-label').innerHTML = '—';
+    $repoName.setAttribute('disabled', true);
 
   $statusBarRed.setAttribute('hidden', true);
   $statusBarYellow.setAttribute('hidden', true);
@@ -636,33 +635,36 @@ const refresh = function () {
 const triggerDoneState = function () {
   if (isRunning()) return;
 
-  clearInterval(isMarkbotDoneYet);
-  $messagesLoader.dataset.state = 'hidden';
-  $refreshBtn.setAttribute('data-state', '');
-  $refreshBtn.setAttribute('aria-label', 'Refresh');
-  $refreshBtn.setAttribute('title', 'Refresh');
+    clearInterval(isLintbotDoneYet);
+    $messagesLoader.dataset.state = 'hidden';
+    $refreshBtn.setAttribute('data-state', '');
+    $refreshBtn.setAttribute('aria-label', 'Refresh');
+    $refreshBtn.setAttribute('title', 'Refresh');
 
-  if (hasErrors()) {
-    $messageHeader.dataset.state = 'errors';
-    $robotLogo.setAttribute('aria-label', 'Some checks failed.');
-  } else {
-    $messageHeader.dataset.state = 'no-errors';
-    $robotLogo.setAttribute('aria-label', 'All clear!');
-    $submit.dataset.state = 'visible';
-    $messages.dataset.state = 'hidden';
-    $canvasBtn.removeAttribute('disabled');
+    if (hasErrors()) {
+        $messageHeader.dataset.state = 'errors';
+        $robotLogo.setAttribute('aria-label', 'Some checks failed.');
+        $reportsBtn.removeAttribute('disabled');
+    } else {
+        $messageHeader.dataset.state = 'no-errors';
+        $robotLogo.setAttribute('aria-label', 'All clear!');
+        //$submit.dataset.state = 'visible';
+        $messages.dataset.state = 'hidden';
+        $reportsBtn.removeAttribute('disabled');
+        //$canvasBtn.removeAttribute('disabled');
 
-    timeEstimator.getTimeEstimate(fullPath, config.ignoreCommitEmails, (stats) => {
-      sessionStorage.setItem('current-stats', JSON.stringify(stats));
-      $statsStart.innerHTML = dateFormatter.format(stats.start);
-      $statsEnd.innerHTML = dateFormatter.format(stats.end);
-      $statsTime.innerHTML = `~${stats.estimatedTime} h`;
-      $statsCommits.innerHTML = stats.numCommits ? stats.numCommits : 'Not checked';
-      $statsStart.dataset.state = 'done';
-      $statsEnd.dataset.state = 'done';
-      $statsTime.dataset.state = 'done';
-      $statsCommits.dataset.state = 'done';
-    });
+
+        timeEstimator.getTimeEstimate(fullPath, config.ignoreCommitEmails, (stats) => {
+            //sessionStorage.setItem('current-stats', JSON.stringify(stats));
+            //$statsStart.innerHTML = dateFormatter.format(stats.start);
+            //$statsEnd.innerHTML = dateFormatter.format(stats.end);
+            //$statsTime.innerHTML = `~${stats.estimatedTime} h`;
+            //$statsCommits.innerHTML = stats.numCommits ? stats.numCommits : 'Not checked';
+            //$statsStart.dataset.state = 'done';
+            //$statsEnd.dataset.state = 'done';
+            //$statsTime.dataset.state = 'done';
+            //$statsCommits.dataset.state = 'done';
+        });
 
     if (hasWarnings()) {
       $messageHeading.innerHTML = successMessages[Math.floor(Math.random() * successMessages.length)] + '-ish!';
@@ -671,8 +673,8 @@ const triggerDoneState = function () {
       $messageHeading.innerHTML = successMessages[Math.floor(Math.random() * successMessages.length)] + '!';
     }
 
-    if ($canvasBtn.dataset.canSubmit === 'true') markbot.enableSubmitAssignment();
-  }
+        /*if ($canvasBtn.dataset.canSubmit === 'true') lintbot.enableSubmitAssignment();*/
+    }
 };
 
 const isRunning = function () {
@@ -722,30 +724,30 @@ const hasWarnings = function () {
 };
 
 const startChecks = function () {
-  console.log(fullPath);
-  markbot.newDebugGroup(fullPath);
-  markbot.onFileDropped(fullPath);
-  isMarkbotDoneYet = setInterval(triggerDoneState, 1000);
+    console.log(fullPath);
+    lintbot.newDebugGroup(fullPath);
+    lintbot.onFileDropped(fullPath);
+    isLintbotDoneYet = setInterval(triggerDoneState, 1000);
 };
 
 const fileDropped = function (path) {
-  if (localStorage.getItem('github-username') && localStorage.getItem('progressinator-api-token')) {
-    reset();
-    fullPath = path;
-    startChecks();
-    $dropbox.dataset.state = 'hidden';
-    $messagesWrapper.dataset.state = 'visible';
-    $checksWrapper.dataset.state = 'visible';
-    $statusBar.removeAttribute('disabled');
-    $refreshBtn.removeAttribute('disabled');
-    $refreshBtn.setAttribute('aria-label', 'Computing…');
-    $refreshBtn.setAttribute('title', 'Computing…');
-    $refreshBtn.setAttribute('data-state', 'computing');
-    $openEditorBtn.removeAttribute('disabled');
-    $openBrowserBtn.removeAttribute('disabled');
-    $openRepoBtn.removeAttribute('disabled');
-    $createIssueBtn.removeAttribute('disabled');
-  }
+    //if (localStorage.getItem('github-username') && localStorage.getItem('progressinator-api-token')) {
+        reset();
+        fullPath = path;
+        startChecks();
+        $dropbox.dataset.state = 'hidden';
+        $messagesWrapper.dataset.state = 'visible';
+        $checksWrapper.dataset.state = 'visible';
+        $statusBar.removeAttribute('disabled');
+        $refreshBtn.removeAttribute('disabled');
+        $refreshBtn.setAttribute('aria-label', 'Computing…');
+        $refreshBtn.setAttribute('title', 'Computing…');
+        $refreshBtn.setAttribute('data-state', 'computing');
+        $openEditorBtn.removeAttribute('disabled');
+        $openBrowserBtn.removeAttribute('disabled');
+        //$openRepoBtn.removeAttribute('disabled');
+        //$createIssueBtn.removeAttribute('disabled');
+    //}
 };
 
 const statusBarUpdate = function () {
@@ -802,14 +804,21 @@ const statusBarUpdate = function () {
   return false;
 }
 
-const submitAssignment = function (e) {
+const openReports = function (e) {
+    if (e) e.preventDefault();
+    if (!isRunning()) {
+        lintbot.showReportsWindow();
+	}
+};
+
+/*const submitAssignment = function (e) {
   if (e) e.preventDefault();
 
   if (!hasErrors() && !isRunning()) {
     $canvasBtn.dataset.state = 'processing';
     $allGoodCheck.dataset.state = 'processing';
     $canvasBtnText.innerHTML = 'Submitting…';
-    markbot.disableSubmitAssignment();
+    lintbot.disableSubmitAssignment();
     let stats = JSON.parse(sessionStorage.getItem('current-stats'));
     let details = {
       started: stats.start,
@@ -818,7 +827,7 @@ const submitAssignment = function (e) {
       number_of_commits: stats.numCommits,
     };
 
-    markbot.submitAssessment(localStorage.getItem('github-username'), localStorage.getItem('progressinator-api-token'), details, function (err, code, data) {
+    lintbot.submitAssessment(localStorage.getItem('github-username'), localStorage.getItem('progressinator-api-token'), details, function (err, code, data) {
       if (!err && code >= 200 && code < 300) {
         $canvasBtn.dataset.state = 'done';
         $canvasBtnText.innerHTML = 'Submitted';
@@ -827,12 +836,12 @@ const submitAssignment = function (e) {
         $canvasBtn.dataset.state = '';
         $canvasBtnText.innerHTML = 'Submit';
         $allGoodCheck.dataset.state = '';
-        markbot.enableSubmitAssignment();
+        lintbot.enableSubmitAssignment();
         if (data && data.detail) displayAlert(data.detail);
       }
     });
   }
-};
+};*/
 
 $body.classList.add(`os-${os.platform()}`);
 
@@ -870,26 +879,26 @@ $body.ondrop = (e) => {
 
   e.preventDefault();
 
-  if (!fs.statSync(e.dataTransfer.files[0].path).isDirectory()) {
-    displayAlert('Drop a folder onto Markbot instead of a single file');
-    return false;
-  }
+    if (!fs.statSync(e.dataTransfer.files[0].path).isDirectory()) {
+        displayAlert('Drop a folder onto Lintbot instead of a single file');
+        return false;
+    }
 
   fileDropped(e.dataTransfer.files[0].path);
 
   return false;
 };
 
-document.getElementById('sign-in-form').addEventListener('submit', (e) => {
+/*document.getElementById('sign-in-form').addEventListener('submit', (e) => {
   let username = document.getElementById('username').value.trim();
   let apitoken = document.getElementById('api-token').value.trim();
 
   e.preventDefault();
-  $openProgressBtn.setAttribute('disabled', true);
+  $openCoursewebsiteBtn.setAttribute('disabled', true);
 
   if (username) {
     localStorage.setItem('github-username', username);
-    $openProgressBtn.removeAttribute('disabled');
+    $openCoursewebsiteBtn.removeAttribute('disabled');
   } else {
     localStorage.setItem('github-username', false);
   }
@@ -900,10 +909,10 @@ document.getElementById('sign-in-form').addEventListener('submit', (e) => {
     localStorage.setItem('progressinator-api-token',false);
   }
 
-  markbot.enableSignOut(localStorage.getItem('github-username'));
-  $signin.dataset.state = 'hidden';
+  lintbot.enableSignOut(localStorage.getItem('github-username'));
+  //$signin.dataset.state = 'hidden';
   $dropbox.dataset.state = 'visible';
-});
+});*/
 
 document.addEventListener('click', (e) => {
   if (e.target.matches('#messages a') || e.target.matches('#messages-positive a') || e.target.matches('#messages-warning a')) {
@@ -911,10 +920,10 @@ document.addEventListener('click', (e) => {
     shell.openExternal(e.target.href);
   }
 
-  if (e.target.matches('#sign-in-form a')) {
-    e.preventDefault();
-    shell.openExternal(e.target.href);
-  }
+    /*if (e.target.matches('#sign-in-form a')) {
+      e.preventDefault();
+      shell.openExternal(e.target.href);
+    }*/
 
   if (e.target.matches('#checks a')) {
     let elem = document.getElementById(e.target.dataset.id);
@@ -940,18 +949,26 @@ window.addEventListener('load', () => {
 });
 
 $repoName.addEventListener('click', (e) => {
-  e.preventDefault();
-  markbot.revealFolder();
+    e.preventDefault();
+    lintbot.revealFolder();
 });
 
 $robotLogo.addEventListener('click', () => refresh());
-$openProgressBtn.addEventListener('click', () => markbot.openProgressinator());
+
+$openCoursewebsiteBtn.addEventListener('click', () => lintbot.openCoursewebsite());
+
 $refreshBtn.addEventListener('click', () => refresh());
-$openBrowserBtn.addEventListener('click', () => markbot.openBrowserToServer());
-$createIssueBtn.addEventListener('click', () => markbot.createGitHubIssue());
-$openRepoBtn.addEventListener('click', () => markbot.openGitHubRepo());
-$openEditorBtn.addEventListener('click', () => markbot.openInCodeEditor());
-$canvasBtn.addEventListener('click', () => submitAssignment());
+
+$openBrowserBtn.addEventListener('click', () => lintbot.openBrowserToServer());
+
+//$createIssueBtn.addEventListener('click', () => lintbot.createGitHubIssue());
+//$openRepoBtn.addEventListener('click', () => lintbot.openGitHubRepo());
+
+$openEditorBtn.addEventListener('click', () => lintbot.openInCodeEditor());
+
+//$canvasBtn.addEventListener('click', () => submitAssignment());
+
+$reportsBtn.addEventListener('click', () => openReports());
 
 listener.on('app:file-missing', () => {
   reset();
@@ -1067,14 +1084,14 @@ listener.on('check-group:item-complete', (e, group, id, label, errors, messages,
     checks[checkId].style.pointerEvents = 'none';
   }
 
-  statusBarUpdate();
-})
+    statusBarUpdate();
+});
 
 listener.on('app:re-run', () => {
   refresh(fullPath);
 });
 
-listener.on('app:without-github', () => {
+/*listener.on('app:without-github', () => {
   $createIssueBtn.dataset.canBeEnabled = false;
   $createIssueBtn.setAttribute('tabindex', -1);
   $openRepoBtn.dataset.canBeEnabled = false;
@@ -1101,6 +1118,7 @@ listener.on('app:with-canvas', () => {
   $messageCanvas.removeAttribute('hidden');
   [].map.call(document.querySelectorAll('.success-fail-message-warning'), (elem) => elem.setAttribute('hidden', true));
 });
+*/
 
 listener.on('app:focus-toolbar', () => {
   $toolbar.focus();
@@ -1114,24 +1132,24 @@ listener.on('app:focus-errorlist', () => {
   $messagesWrapper.focus();
 });
 
-listener.on('app:sign-out', () => {
+/*listener.on('app:sign-out', () => {
   localStorage.clear();
-  markbot.disableSignOut();
-  markbot.disableFolderMenuFeatures();
+  lintbot.disableSignOut();
+  lintbot.disableFolderMenuFeatures();
   window.location.reload();
-});
+});*/
 
 listener.on('app:file-dropped', (e, path) => {
   fileDropped(path);
 });
 
-listener.on('app:submit-assignment', () => {
+/*listener.on('app:submit-assignment', () => {
   submitAssignment();
-});
+}); */
 
 listener.on('debug', (e, ...args) => {
-  markbot.debug(args);
-  console.log(...args);
+    lintbot.debug(args);
+    console.log(...args);
 });
 
 listener.on('alert', (e, message) => {
@@ -1159,15 +1177,19 @@ listener.on('error:missing-dependency', (e, deps) => {
   $loader.dataset.state = 'hidden';
   $dependencies.dataset.state = 'visible';
 
-  if (deps.hasGit === false) {
-    document.getElementById('dep-git').dataset.state = 'visible';
-  } else {
-    document.getElementById('dep-git').dataset.state = 'hidden';
-  }
+    /*if (deps.hasGit === false) {
+      document.getElementById('dep-git').dataset.state = 'visible';
+    } else {
+      document.getElementById('dep-git').dataset.state = 'hidden';
+    }*/
 
   if (deps.hasJava === false) {
     document.getElementById('dep-java').dataset.state = 'visible';
   } else {
     document.getElementById('dep-java').dataset.state = 'hidden';
   }
+});
+
+listener.on('report-window-tab-lbm', (e, fp, ll) => {
+    lintbot.reportsWindowTab(fp, ll);
 });

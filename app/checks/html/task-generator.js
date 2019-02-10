@@ -2,11 +2,11 @@
 
 const taskPool = require(`${__dirname}/../../task-pool`);
 
-module.exports.generateTaskList = function (markbotFile, isCheater) {
+module.exports.generateTaskList = function (lintbotFile, isCheater) {
   var tasks = [];
 
-  if (markbotFile.html) {
-    markbotFile.html.forEach(function (file) {
+  if (lintbotFile.html) {
+    lintbotFile.html.forEach(function (file) {
       let task = {
         group: `html-${file.path}-${Date.now()}`,
         groupLabel: file.path,

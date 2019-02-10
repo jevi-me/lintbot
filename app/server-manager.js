@@ -1,7 +1,7 @@
 'use strict';
 
 const getPort = require('get-port');
-const markbotMain = require(`${__dirname}/markbot-main`);
+const lintbotMain = require(`${__dirname}/lintbot-main`);
 const serverWeb = require(`${__dirname}/server-web`);
 const serverHtml = require(`${__dirname}/server-html`);
 const serverLanguage = require(`${__dirname}/server-language`);
@@ -51,7 +51,7 @@ const start = function (next) {
       serversRunning = true;
       next();
     }).catch((reason) => {
-      markbotMain.send('restart', `Internal servers won’t start: “${reason}”. Please quit & restart Markbot.`);
+      lintbotMain.send('restart', `Internal servers won’t start: “${reason}”. Please quit & restart Lintbot.`);
     });
   });
 };

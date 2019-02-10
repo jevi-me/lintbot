@@ -5,7 +5,7 @@ const path = require('path');
 const util = require('util');
 const gitCommits = require('git-commits');
 const exists = require(__dirname + '/../../file-exists');
-const markbotMain = require('electron').remote.require('./app/markbot-main');
+const lintbotMain = require('electron').remote.require('./app/lintbot-main');
 
 const matchesProfEmail = function (email, profEmails) {
   return (profEmails.indexOf(email) > -1);
@@ -19,7 +19,7 @@ module.exports.check = function (fullPath, commitNum, ignoreCommitEmails, group,
   let errors = [];
   let exists = false;
 
-  markbotMain.send('check-group:item-new', group, id, label);
+  lintbotMain.send('check-group:item-new', group, id, label);
 
   try {
     exists = fs.statSync(repoPath).isDirectory();
@@ -28,11 +28,11 @@ module.exports.check = function (fullPath, commitNum, ignoreCommitEmails, group,
   }
 
   if (!exists) {
-    markbotMain.send('check-group:item-complete', group, id, label, ['Not a Git repository']);
+    lintbotMain.send('check-group:item-complete', group, id, label, ['Not a Git repository']);
     return next();
   }
 
-  markbotMain.send('check-group:item-computing', group, id, label);
+  lintbotMain.send('check-group:item-computing', group, id, label);
 
   gitCommits(repoPath)
     .on('data', function (commit) {
@@ -43,11 +43,11 @@ module.exports.check = function (fullPath, commitNum, ignoreCommitEmails, group,
         errors.push(util.format('Not enough commits to the repository (has %d, expecting %d)', studentCommits, commitNum));
       }
 
-      markbotMain.send('check-group:item-complete', group, id, label, errors);
+      lintbotMain.send('check-group:item-complete', group, id, label, errors);
       next();
     })
     .on('error', function (err) {
-      markbotMain.send('check-group:item-complete', group, id, label, [`Not a Git repository or no commits`]);
+      lintbotMain.send('check-group:item-complete', group, id, label, [`Not a Git repository or no commits`]);
       next();
     })
   ;

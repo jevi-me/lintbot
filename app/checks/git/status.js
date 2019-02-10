@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const exec = require('child_process').exec;
 const gitState = require('git-state');
-const markbotMain = require('electron').remote.require('./app/markbot-main');
+const lintbotMain = require('electron').remote.require('./app/lintbot-main');
 
 module.exports.check = function (fullPath, gitOpts, group, next) {
   const allSynced = 'all-synced';
@@ -18,19 +18,19 @@ module.exports.check = function (fullPath, gitOpts, group, next) {
   let status;
 
   if (gitOpts.allSynced) {
-    markbotMain.send('check-group:item-new', group, allSynced, allSyncedLabel);
-    markbotMain.send('check-group:item-computing', group, allSynced, allSyncedLabel);
+    lintbotMain.send('check-group:item-new', group, allSynced, allSyncedLabel);
+    lintbotMain.send('check-group:item-computing', group, allSynced, allSyncedLabel);
   }
 
   if (gitOpts.allCommitted) {
-    markbotMain.send('check-group:item-new', group, allCommitted, allCommittedLabel);
-    markbotMain.send('check-group:item-computing', group, allCommitted, allCommittedLabel);
+    lintbotMain.send('check-group:item-new', group, allCommitted, allCommittedLabel);
+    lintbotMain.send('check-group:item-computing', group, allCommitted, allCommittedLabel);
   }
 
   gitState.check(fullPath, function (err, status) {
     if (err) {
-      markbotMain.send('check-group:item-complete', group, allSynced, allSyncedLabel, errors);
-      markbotMain.send('check-group:item-complete', group, allCommitted, allCommittedLabel, errors);
+      lintbotMain.send('check-group:item-complete', group, allSynced, allSyncedLabel, errors);
+      lintbotMain.send('check-group:item-complete', group, allCommitted, allCommittedLabel, errors);
       return next();
     }
 
@@ -39,9 +39,9 @@ module.exports.check = function (fullPath, gitOpts, group, next) {
         let plural = (status.ahead === 1) ? '' : 's';
         let isOrAre = (status.ahead === 1) ? 'is' : 'are';
 
-        markbotMain.send('check-group:item-complete', group, allSynced, allSyncedLabel, [`There ${isOrAre} ${status.ahead} commit${plural} waiting to be pushed`]);
+        lintbotMain.send('check-group:item-complete', group, allSynced, allSyncedLabel, [`There ${isOrAre} ${status.ahead} commit${plural} waiting to be pushed`]);
       } else {
-        markbotMain.send('check-group:item-complete', group, allSynced, allSyncedLabel);
+        lintbotMain.send('check-group:item-complete', group, allSynced, allSyncedLabel);
       }
     }
 
@@ -51,9 +51,9 @@ module.exports.check = function (fullPath, gitOpts, group, next) {
         let plural = (totalFiles === 1) ? '' : 's';
         let isOrAre = (totalFiles === 1) ? 'is' : 'are';
 
-        markbotMain.send('check-group:item-complete', group, allCommitted, allCommittedLabel, [`There ${isOrAre} ${totalFiles} file${plural} waiting to be committed`]);
+        lintbotMain.send('check-group:item-complete', group, allCommitted, allCommittedLabel, [`There ${isOrAre} ${totalFiles} file${plural} waiting to be committed`]);
       } else {
-        markbotMain.send('check-group:item-complete', group, allCommitted, allCommittedLabel);
+        lintbotMain.send('check-group:item-complete', group, allCommitted, allCommittedLabel);
       }
     }
 
